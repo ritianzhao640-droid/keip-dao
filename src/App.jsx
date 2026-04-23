@@ -69,13 +69,27 @@ export default function App() {
               : '未连接钱包'
             }
           </div>
-          <button
-            className={`btn-dark pill ${wallet.connecting ? 'disabled' : ''}`}
-            onClick={wallet.account ? wallet.disconnect : wallet.connect}
-            disabled={wallet.connecting}
-          >
-            {wallet.account ? '断开' : (wallet.connecting ? '连接中…' : '连接钱包')}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className={`btn-dark pill ${chainData.dashboardLoading || chainData.top10Loading || chainData.historyLoading ? 'disabled' : ''}`}
+              onClick={chainData.loadAll}
+              disabled={chainData.dashboardLoading || chainData.top10Loading || chainData.historyLoading}
+              title="刷新链上数据"
+              style={{ minWidth: 40, padding: '9px 12px' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                <polyline points="21 3 21 9 15 9"/>
+              </svg>
+            </button>
+            <button
+              className={`btn-dark pill ${wallet.connecting ? 'disabled' : ''}`}
+              onClick={wallet.account ? wallet.disconnect : wallet.connect}
+              disabled={wallet.connecting}
+            >
+              {wallet.account ? '断开' : (wallet.connecting ? '连接中…' : '连接钱包')}
+            </button>
+          </div>
         </div>
       </div>
 
