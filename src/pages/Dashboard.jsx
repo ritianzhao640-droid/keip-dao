@@ -6,7 +6,7 @@ import { VAULT_ABI, ERC20_ABI } from '../contracts/index.js';
 
 export default function Dashboard({ account, signer, chainData, onNavigate }) {
   const [claimingBurn, setClaimingBurn] = useState(false);
-  const { dashboard, dashboardLoading, dashboardError, tokenDecimals } = chainData;
+  const { dashboard, dashboardLoading, dashboardError, tokenDecimals, providerError } = chainData;
 
   // 领取燃烧奖励
   const handleClaimBurn = useCallback(async () => {
@@ -27,7 +27,8 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
   // 状态栏文案
   let statusText = '正在初始化链上读取…';
   let statusCls = '';
-  if (dashboardError) { statusText = '读取失败：' + dashboardError; statusCls = 'warn'; }
+  if (providerError) { statusText = '网络连接失败：' + providerError; statusCls = 'error'; }
+  else if (dashboardError) { statusText = '读取失败：' + dashboardError; statusCls = 'warn'; }
   else if (dashboard && !dashboardLoading) { statusText = '首页数据已从真实链上读取。'; statusCls = 'ok'; }
 
   // 数据安全访问

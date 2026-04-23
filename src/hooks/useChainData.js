@@ -16,6 +16,7 @@ function getTokenContract(provider) {
 
 export function useChainData(account) {
   const [provider, setProvider] = useState(null);
+  const [providerError, setProviderError] = useState(null);
   const [tokenDecimals, setTokenDecimals] = useState(18);
   const [tokenSymbol, setTokenSymbol] = useState('TOKEN');
 
@@ -32,7 +33,7 @@ export function useChainData(account) {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // 燃烧预览
+  // 燃烧预览（保留接口但不再在UI使用）
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
@@ -44,12 +45,19 @@ export function useChainData(account) {
         const p = await createReadProvider();
         if (cancelled) return;
         setProvider(p);
+        setProviderError(null);
+        console.log('[ChainData] Provider 已连接, block:', await p.getBlockNumber());
+
         // 读取代币信息
         const token = getTokenContract(p);
         try { setTokenDecimals(Number(await token.decimals())); } catch {}
         try { setTokenSymbol(await token.symbol()); } catch {}
       } catch (e) {
-        if (!cancelled) console.error('Provider 初始化失败:', e);
+        if (!cancelled) {
+          console.error('[ChainData] Provider 初始化失败:', e);
+          setProviderError(e.message || '无法连接 BSC 网络');
+          setProvider(null);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -62,11 +70,14 @@ export function useChainData(account) {
     setDashboardError(null);
     try {
       const lens = getLens(provider);
-      const data = await lens.burnBoardDashboard(CONFIG.vault, account || ZERO);
+      const userAddr = account || ZERO;
+      console.log('[ChainData] 调用 burnBoardDashboard vault=', CONFIG.vault, 'user=', userAddr);
+      const data = await lens.burnBoardDashboard(CONFIG.vault, userAddr);
+      console.log('[ChainData] burnBoardDashboard 返回:', JSON.stringify(data));
       setDashboard(data);
       setDashboardError(null);
     } catch (e) {
-      console.error('loadDashboard 失败:', e);
+      console.error('[ChainData] loadDashboard 失败:', e);
       setDashboardError(e.shortMessage || e.message || '读取失败');
     } finally {
       setDashboardLoading(false);
@@ -79,10 +90,12 @@ export function useChainData(account) {
     setTop10Loading(true);
     try {
       const lens = getLens(provider);
+      console.log('[ChainData] 调用 currentBurnBoardTop10 vault=', CONFIG.vault);
       const rows = await lens.currentBurnBoardTop10(CONFIG.vault);
+      console.log('[ChainData] top10 返回:', JSON.stringify(rows));
       setTop10(rows.filter(r => r.user && r.user !== ZERO));
     } catch (e) {
-      console.error('loadTop10 失败:', e);
+      console.error('[ChainData] loadTop10 失败:', e);
       setTop10([]);
     } finally {
       setTop10Loading(false);
@@ -95,17 +108,19 @@ export function useChainData(account) {
     setHistoryLoading(true);
     try {
       const lens = getLens(provider);
+      console.log('[ChainData] 调用 recentBurnBoardDays count=', count);
       const days = await lens.recentBurnBoardDays(CONFIG.vault, count);
+      console.log('[ChainData] history 返回:', JSON.stringify(days));
       setHistory(days);
     } catch (e) {
-      console.error('loadHistory 失败:', e);
+      console.error('[ChainData] loadHistory 失败:', e);
       setHistory([]);
     } finally {
       setHistoryLoading(false);
     }
   }, [provider]);
 
-  // 燃烧预览（防抖）
+  // 燃烧预览（防抖，保留接口）
   const previewTimerRef = useRef(null);
   const loadPreview = useCallback(async (amountInput, inviterValue) => {
     if (!provider || !amountInput || Number(amountInput) <= 0) {
@@ -113,7 +128,7 @@ export function useChainData(account) {
       return;
     }
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
-    
+
     previewTimerRef.current = setTimeout(async () => {
       setPreviewLoading(true);
       try {
@@ -128,7 +143,7 @@ export function useChainData(account) {
         );
         setPreview(result);
       } catch (e) {
-        console.error('previewBurn 失败:', e);
+        console.error('[ChainData] previewBurn 失败:', e);
         setPreview(null);
       } finally {
         setPreviewLoading(false);
@@ -141,13 +156,14 @@ export function useChainData(account) {
     await Promise.all([loadDashboard(), loadTop10(), loadHistory()]);
   }, [loadDashboard, loadTop10, loadHistory]);
 
-  // 连接后自动加载
+  // 连接后自动加载 + 首次 provider 就绪时也加载
   useEffect(() => {
     if (provider) loadAll();
   }, [provider, account, loadAll]);
 
   return {
     provider,
+    providerError,
     tokenDecimals,
     tokenSymbol,
     dashboard,
