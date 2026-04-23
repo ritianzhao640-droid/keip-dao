@@ -30,12 +30,9 @@ export default function App() {
   // 导航（支持自定义事件跨组件调用）
   const handleNavigate = useCallback((tab) => {
     setActiveTab(tab);
-    // 同步显示对应 section
+    // 同步显示对应 section（CSS 兼容层）
     document.querySelectorAll('.section').forEach(el => {
       el.classList.toggle('active', el.id === tab);
-    });
-    document.querySelectorAll('.tab').forEach(el => {
-      el.classList.toggle('active', el.dataset.tab === tab);
     });
   }, []);
 

@@ -18,7 +18,7 @@ export default function Board({ chainData }) {
         </div>
         <div className="card stat">
           <div className="k">总燃烧</div>
-          <div className="num mono">{boardOverview ? fmtNum(boardOverview.totalBurned, 4) : '--'}</div>
+          <div className="num mono">{boardOverview ? fmtUnits(boardOverview.totalBurned, 18, 2) : '--'}</div>
         </div>
         <div className="card stat">
           <div className="k">参与人数</div>
