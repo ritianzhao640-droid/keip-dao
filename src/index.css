@@ -24,7 +24,7 @@ body {
   max-width: 440px;
   margin: 0 auto;
   min-height: 100vh;
-  padding: 18px 14px 104px;
+  padding: 18px 14px 24px;
 }
 .hero, .card {
   background: var(--card);

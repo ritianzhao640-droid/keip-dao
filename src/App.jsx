@@ -63,11 +63,19 @@ export default function App() {
           <div className="box light"><div className="k">永久权重</div><div className="v">50%</div></div>
         </div>
         <div className="address">
-          <div>
-            <div className="k">正式 Vault</div>
-            <div style={{ marginTop: 6, fontSize: 14, fontWeight: 600 }}>{shortAddr(CONFIG.vault)}</div>
+          <div className="tip">
+            {wallet.account
+              ? `已连接 · ${shortAddr(wallet.account)}`
+              : '未连接钱包'
+            }
           </div>
-          <button className="btn-light pill" onClick={() => navigator.clipboard?.writeText(CONFIG.vault)}>复制地址</button>
+          <button
+            className={`btn-dark pill ${wallet.connecting ? 'disabled' : ''}`}
+            onClick={wallet.account ? wallet.disconnect : wallet.connect}
+            disabled={wallet.connecting}
+          >
+            {wallet.account ? '断开' : (wallet.connecting ? '连接中…' : '连接钱包')}
+          </button>
         </div>
       </div>
 
@@ -82,22 +90,6 @@ export default function App() {
         onNavigate={handleNavigate}
       />
 
-      {/* 底部钱包栏 */}
-      <div className="footerbar">
-        <div className="tip">
-          {wallet.account
-            ? `已连接钱包 · ${shortAddr(wallet.account)}`
-            : '未连接钱包'
-          }
-        </div>
-        <button
-          className={`btn-dark pill ${wallet.connecting ? 'disabled' : ''}`}
-          onClick={wallet.account ? wallet.disconnect : wallet.connect}
-          disabled={wallet.connecting}
-        >
-          {wallet.account ? '断开' : (wallet.connecting ? '连接中…' : '连接钱包')}
-        </button>
-      </div>
     </div>
   );
 }
