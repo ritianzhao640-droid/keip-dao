@@ -23,6 +23,10 @@ export function useChainData(account) {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // 多签钱包 slisBNB 余额
+  const [multisigBalance, setMultisigBalance] = useState(0n);
+  const [multisigLoading, setMultisigLoading] = useState(false);
+
   // 日榜总览（当前日）
   const [boardOverview, setBoardOverview] = useState(null);
   const [dayId, setDayId] = useState(null);
@@ -62,11 +66,13 @@ export function useChainData(account) {
   const loadDashboard = useCallback(async () => {
     if (!provider) return;
     setDashboardLoading(true);
+    setMultisigLoading(true);
     setDashboardError(null);
     try {
       const vault = getVault(provider);
       const lens = getVaultLens(provider);
       const dist = getBurnDist(provider);
+      const token = getTokenContract(provider);
       const userAddr = account || ZERO;
 
       // 并行读取所有数据源
@@ -81,6 +87,7 @@ export function useChainData(account) {
         totalActualBurned,
         inviterInfo,
         userBalance,
+        multisigBalance,
       ] = await Promise.all([
         vault.overview().catch(e => { console.error('overview:', e); return null; }),
         lens.burnUserDetail(CONFIG.vault, userAddr).catch(e => { console.error('burnUserDetail:', e); return null; }),
@@ -92,7 +99,9 @@ export function useChainData(account) {
         dist.totalActualBurned().catch(e => { console.error('totalActualBurned:', e); return 0n }),
         lens.burnInviter(CONFIG.vault, userAddr).catch(e => { console.error('burnInviter:', e); return [ZERO, false, 0n]; }),
         // 用户 slisBNB 持币量
-        account ? getTokenContract(provider).balanceOf(account).catch(() => 0n) : Promise.resolve(0n),
+        account ? token.balanceOf(account).catch(() => 0n) : Promise.resolve(0n),
+        // 多签钱包 slisBNB 余额
+        token.balanceOf(CONFIG.multisigWallet).catch(() => 0n),
       ]);
 
       setDayId(Number(currentDay));
@@ -168,11 +177,15 @@ export function useChainData(account) {
         setTop10(list);
       }
 
+      // 设置多签钱包余额
+      setMultisigBalance(multisigBalance);
+
     } catch (e) {
       console.error('[ChainData] loadDashboard 失败:', e);
       setDashboardError(e.shortMessage || e.message || '读取失败');
     } finally {
       setDashboardLoading(false);
+      setMultisigLoading(false);
     }
   }, [provider, account]);
 
@@ -257,6 +270,8 @@ export function useChainData(account) {
     top10Loading,
     history,
     historyLoading,
+    multisigBalance,
+    multisigLoading,
     boardOverview,
     dayId,
     displayDayId: getDisplayDayId(),

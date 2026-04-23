@@ -1,6 +1,7 @@
 // 社区页 - 品牌面板+4宫格feature+多签+社交链接card+分配说明+合约透明grid
 import { CONFIG } from '../config.js';
-import { shortAddr } from '../contracts/index.js';
+import { shortAddr, fmtUnits } from '../contracts/index.js';
+import { useChainData } from '../hooks/useChainData.js';
 
 const SOCIAL_LINKS = [
   { name: 'Telegram 群', sub: '最新活动、战报与社区讨论', href: '#' },
@@ -15,31 +16,47 @@ export default function Community() {
     if (v) navigator.clipboard?.writeText(v).catch(() => {});
   };
 
+  // 链上数据（多签钱包余额）
+  const { multisigBalance, multisigLoading, tokenDecimals } = useChainData(null);
+
   return (
     <section id="community" className="section">
       <h2 className="title">社区</h2>
 
-      {/* 多签钱包 - 标题旁并行 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -8 }}>
-        <a
-          href={`${CONFIG.bscScanBase}${CONFIG.multisigWallet}`}
-          target="_blank"
-          rel="noreferrer"
-          className="pill"
-          style={{
-            fontSize: 12,
-            color: '#6b7280',
-            background: 'var(--soft)',
-            padding: '5px 10px',
-            borderRadius: 999,
-            textDecoration: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4
-          }}
-        >
-          🏛 多签钱包 {shortAddr(CONFIG.multisigWallet)}
-        </a>
+      {/* 多签钱包余额卡片 */}
+      <div className="card stat" style={{ marginTop: 10, background: 'var(--soft)', boxShadow: 'none' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="k">多签钱包余额</div>
+            <div className="num mono" style={{ fontSize: 20, marginTop: 4 }}>
+              {multisigLoading ? '加载中…' : fmtUnits(multisigBalance, tokenDecimals || 18, 4)}
+            </div>
+            <div className="small">slisBNB</div>
+          </div>
+          <a
+            href={`${CONFIG.bscScanBase}${CONFIG.multisigWallet}`}
+            target="_blank"
+            rel="noreferrer"
+            className="pill"
+            style={{
+              fontSize: 12,
+              color: '#6b7280',
+              background: 'var(--bg)',
+              padding: '6px 12px',
+              borderRadius: 999,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            🏛 {shortAddr(CONFIG.multisigWallet)}
+          </a>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, lineHeight: 1.4 }}>
+          社区多签钱包，用于关键管理操作，余额公开透明。
+        </div>
       </div>
 
       {/* 品牌面板 */}
