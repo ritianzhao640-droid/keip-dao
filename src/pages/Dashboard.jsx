@@ -8,7 +8,7 @@ import { showToast } from '../components/Toast.jsx';
 
 export default function Dashboard({ account, signer, chainData, onNavigate }) {
   const [claimingBurn, setClaimingBurn] = useState(false);
-  const { dashboard, dashboardLoading, dashboardError, providerError, dayId } = chainData;
+  const { dashboard, dashboardLoading, dashboardError, providerError, dayId, displayDayId } = chainData;
 
   // 领取燃烧奖励
   const handleClaimBurn = useCallback(async () => {
@@ -76,7 +76,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
         <div className="card stat">
           <div className="k">我的今日燃烧</div>
           <div className="num mono">{me ? fmtUnits(me.todayBurned, 18, 4) : '--'}</div>
-          <div className="small">{dayId ? `第 ${dayId} 期` : ''}</div>
+          <div className="small">{displayDayId ? `第 ${displayDayId} 期` : ''}</div>
         </div>
         <div className="card stat">
           <div className="k">邀请奖励</div>
@@ -90,7 +90,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
         <div className="grid2">
           <div className="card inverse" style={{ boxShadow: 'none' }}>
             <div className="k">当前周期</div>
-            <div className="num mono">{dayId ? `第 ${dayId} 期` : '--'}</div>
+            <div className="num mono">{displayDayId ? `第 ${displayDayId} 期` : '--'}</div>
           </div>
           <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none' }}>
             <div className="k">我的状态</div>

@@ -26,6 +26,12 @@ export function useChainData(account) {
   // 日榜总览（当前日）
   const [boardOverview, setBoardOverview] = useState(null);
   const [dayId, setDayId] = useState(null);
+  // 显示用周期号：第1期、第2期...
+  const getDisplayDayId = () => {
+    if (!dayId) return null;
+    const start = parseInt(localStorage.getItem('day_start_id') || dayId);
+    return Math.max(1, Number(dayId) - start + 1);
+  };
 
   // 初始化 Provider
   useEffect(() => {
@@ -89,6 +95,12 @@ export function useChainData(account) {
       ]);
 
       setDayId(Number(currentDay));
+
+      // 周期初始化：首次加载时记录当前dayId为起点（第1期）
+      const storedStart = localStorage.getItem('day_start_id');
+      if (!storedStart) {
+        localStorage.setItem('day_start_id', Number(currentDay).toString());
+      }
 
       // 组装 dashboard 数据
       const data = {
@@ -246,6 +258,7 @@ export function useChainData(account) {
     historyLoading,
     boardOverview,
     dayId,
+    displayDayId: getDisplayDayId(),
     preview: null,
     previewLoading: false,
     loadDashboard,

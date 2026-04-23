@@ -3,7 +3,7 @@ import { CONFIG } from '../config.js';
 import { fmtUnits, fmtNum, shortAddr } from '../contracts/index.js';
 
 export default function Board({ chainData }) {
-  const { boardOverview, top10, top10Loading, history, historyLoading, dayId } = chainData;
+  const { boardOverview, top10, top10Loading, history, historyLoading, dayId, displayDayId } = chainData;
 
   return (
     <section id="board" className="section">
