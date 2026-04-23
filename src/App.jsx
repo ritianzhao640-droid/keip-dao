@@ -1,5 +1,5 @@
 // 主框架 - tabs切换 + footerbar + 页面路由
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { CONFIG } from './config.js';
 import { useWallet } from './hooks/useWallet.js';
 import { useChainData } from './hooks/useChainData.js';
@@ -39,9 +39,14 @@ export default function App() {
   }, []);
 
   // 监听自定义导航事件
-  useState(() => {
+  useEffect(() => {
     window.addEventListener('navigate', (e) => handleNavigate(e.detail));
-  });
+  }, [handleNavigate]);
+
+  // 初始加载时激活首页
+  useEffect(() => {
+    handleNavigate('home');
+  }, []);
 
   const ActivePage = PAGES[activeTab] || Dashboard;
 

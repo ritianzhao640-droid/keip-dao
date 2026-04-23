@@ -106,7 +106,7 @@ body {
   background: transparent;
 }
 .tab.active { background: #111; color: #fff }
-.section { display: none; margin-top: 18px }
+.section { margin-top: 18px }
 .section.active { display: block }
 
 .title {
