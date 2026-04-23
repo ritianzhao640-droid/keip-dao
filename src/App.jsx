@@ -56,7 +56,7 @@ export default function App() {
       <div className="hero">
         <span className="brand-badge">BSC · 正式地址</span>
         <h1 className="brand-title">最大DeFi攻击</h1>
-        <div className="brand-sub">黑白极简 · 链上真实数据</div>
+        <div className="brand-sub"></div>
         <div className="alloc">
           <div className="box dark"><div className="k">营销</div><div className="v">30%</div></div>
           <div className="box light"><div className="k">日榜</div><div className="v">20%</div></div>
