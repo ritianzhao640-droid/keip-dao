@@ -73,15 +73,27 @@ export default function Invite({ account, signer, chainData }) {
         </div>
 
         <div className="grid2">
-          <div className="card stat" style={{ boxShadow: 'none', background: 'var(--soft)' }}>
-            <div className="k">待领邀请奖励</div>
-            <div className="num mono">{me ? fmtUnits(me.pendingInvite, tokenDecimals, 4) : '--'}</div>
-            <div className="small">代币奖励</div>
+          <div className="card stat" style={{ boxShadow: 'none', background: 'var(--soft)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ flex: 1 }}>
+              <div className="k">待领邀请奖励</div>
+              <div className="num mono">{me ? fmtUnits(me.pendingInvite, tokenDecimals, 4) : '--'}</div>
+              <div className="small">代币奖励</div>
+            </div>
+            <button 
+              className="btn-dark" 
+              onClick={handleClaimInvite} 
+              disabled={claiming || !signer || (me && me.pendingInvite <= 0n)}
+              style={{ marginTop: '12px', width: '100%', fontSize: '14px', padding: '8px 12px' }}
+            >
+              {claiming ? '领取中…' : '领取邀请奖励'}
+            </button>
           </div>
-          <div className="card stat" style={{ boxShadow: 'none', background: 'var(--soft)' }}>
-            <div className="k">累计燃烧量</div>
-            <div className="num mono">{me ? fmtUnits(me.selfBurned || 0n, tokenDecimals, 4) : '--'}</div>
-            <div className="small">个人总燃烧</div>
+          <div className="card stat" style={{ boxShadow: 'none', background: 'var(--soft)', display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
+            <div>
+              <div className="k">累计燃烧量</div>
+              <div className="num mono">{me ? fmtUnits(me.selfBurned || 0n, tokenDecimals, 4) : '--'}</div>
+              <div className="small">个人总燃烧</div>
+            </div>
           </div>
         </div>
       </div>
@@ -96,9 +108,7 @@ export default function Invite({ account, signer, chainData }) {
         </div>
       </div>
 
-      <button className="btn-dark bigbtn" onClick={handleClaimInvite} disabled={claiming || !signer}>
-        {claiming ? '领取中…' : '领取邀请奖励'}
-      </button>
+
     </section>
   );
 }
