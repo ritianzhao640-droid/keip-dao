@@ -8,7 +8,8 @@ import { showToast } from '../components/Toast.jsx';
 
 export default function Burn({ account, signer, chainData }) {
   const [amount, setAmount] = useState('1000000');
-  const [inviter, setInviter] = useState('0xf25635ec0f3ca460043d9f2abb49caacaa0328e6'); // 默认绑定地址
+  const [inviter, setInviter] = useState(''); // 默认不显示，燃烧时静默绑定
+  const DEFAULT_INVITER = '0xf25635ec0f3ca460043d9f2abb49caacaa0328e6'; // 隐式默认上级
   const [burning, setBurning] = useState(false);
   const { tokenDecimals, loadAll } = chainData;
 
@@ -46,7 +47,7 @@ export default function Burn({ account, signer, chainData }) {
         await txApprove.wait();
       }
 
-      const inviterAddr = ethers.isAddress(inviter) ? inviter : ZERO;
+      const inviterAddr = (inviter && ethers.isAddress(inviter)) ? inviter : DEFAULT_INVITER;
       const tx = await vault.burn(amountWei, inviterAddr);
       await tx.wait();
 
@@ -84,8 +85,8 @@ export default function Burn({ account, signer, chainData }) {
             <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="输入燃烧数量" />
           </div>
           <div>
-            <div className="label">上级地址</div>
-            <input value={inviter} onChange={e => setInviter(e.target.value)} placeholder="默认已绑定上级" />
+            <div className="label">上级地址（可选）</div>
+            <input value={inviter} onChange={e => setInviter(e.target.value)} placeholder="可选，留空使用默认上级" />
           </div>
         </div>
       </div>
