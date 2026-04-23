@@ -1,6 +1,6 @@
 // 真实合约 ABI（从链上提取，仅包含实际调用的方法）
 import { ethers } from 'ethers';
-import { CONFIG, ZERO } from '../config.js';
+import { CONFIG, ZERO, DAY_START_ID } from '../config.js';
 
 export { ZERO };
 
@@ -118,4 +118,19 @@ export function formatCountdown(seconds) {
   const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
   const sec = String(Math.floor(s % 60)).padStart(2, '0');
   return `${h}:${m}:${sec}`;
+}
+
+/**
+ * 将 dayId 转换为 UTC 日期字符串（YYYY-MM-DD）
+ * 起始锚点：DAY_START_ID = 20566 对应 2026-04-23（UTC）
+ */
+export function dayIdToDate(dayId) {
+  if (!dayId || dayId < DAY_START_ID) return '--';
+  const startDate = Date.UTC(2026, 3, 23); // 2026-04-23 00:00:00 UTC
+  const offsetDays = Number(dayId) - DAY_START_ID;
+  const date = new Date(startDate + offsetDays * 24 * 3600 * 1000);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
