@@ -1,5 +1,6 @@
 // 主框架 - tabs切换 + footerbar + 页面路由
 import { useState, useCallback, useEffect } from 'react';
+import { ethers } from 'ethers';
 import { CONFIG } from './config.js';
 import { useWallet } from './hooks/useWallet.js';
 import { useChainData } from './hooks/useChainData.js';
@@ -41,8 +42,18 @@ export default function App() {
     window.addEventListener('navigate', (e) => handleNavigate(e.detail));
   }, [handleNavigate]);
 
-  // 初始加载时激活首页
+  // 初始加载时激活首页 + 解析短链
   useEffect(() => {
+    // 短链路由: /r/f25635 -> ?ref=0xf25635...
+    const path = window.location.pathname;
+    const shortMatch = path.match(/^\/r\/([a-fA-F0-9]{6})$/);
+    if (shortMatch) {
+      // 还原为完整地址格式，存入 sessionStorage 供 Burn 页面使用
+      const partial = '0x' + shortMatch[1];
+      sessionStorage.setItem('ref_addr', partial);
+      // 清理 URL
+      window.history.replaceState(null, '', window.location.pathname.replace(/\/r\/[a-fA-F0-9]+/, ''));
+    }
     handleNavigate('home');
   }, []);
 

@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { CONFIG } from '../config.js';
 import { fmtUnits, shortAddr } from '../contracts/index.js';
 import { VAULT_ABI } from '../contracts/index.js';
+import { showToast } from '../components/Toast.jsx';
 
 export default function Invite({ account, signer, chainData }) {
   const [claiming, setClaiming] = useState(false);
@@ -25,13 +26,17 @@ export default function Invite({ account, signer, chainData }) {
       await tx.wait();
       await chainData.loadAll();
     } catch (e) {
-      alert('邀请奖励领取失败：' + (e.shortMessage || e.message || '未知错误'));
+      showToast('邀请奖励领取失败：' + (e.shortMessage || e.message || '未知错误'), 'error');
     } finally {
       setClaiming(false);
     }
   }, [signer, account, chainData]);
 
-  const inviteLink = account
+  // 精简邀请链接显示
+  const shortInviteLink = account
+    ? `${window.location.origin}/r/${account.slice(2, 8)}`
+    : '';
+  const fullInviteLink = account
     ? `${window.location.origin}${window.location.pathname}?ref=${account}`
     : '';
 
@@ -52,10 +57,10 @@ export default function Invite({ account, signer, chainData }) {
           <div>
             <div className="k">邀请链接</div>
             <div className="row-title" style={{ marginTop: 6 }}>
-              {account ? `${window.location.origin}${window.location.pathname}?ref=${shortAddr(account)}` : '连接钱包后生成'}
+              {account ? shortInviteLink : '连接钱包后生成'}
             </div>
           </div>
-          <button className="btn-dark pill" onClick={() => copyText(inviteLink)}>复制</button>
+          <button className="btn-dark pill" onClick={() => copyText(fullInviteLink || shortInviteLink)}>复制</button>
         </div>
 
         <div className="grid2">

@@ -37,6 +37,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
   const ov = dashboard?.dayInfo;
   const me = dashboard?.me;
   const totalBurned = dashboard?.totalBurned;
+  const userBalance = dashboard?.userBalance;
 
   // 倒计时：用 dayDuration - (当前时间戳 % dayDuration)
   // 这里先用 dayId 展示，精确倒计时需要知道 dayStart
@@ -46,13 +47,15 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
     <section id="home" className="section">
       <h2 className="title">首页</h2>
 
-      {/* 品牌面板 */}
+      {/* 品牌面板 - 持币量 */}
       <div className="brand-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
           <div>
-            <div className="k">项目</div>
-            <div style={{ marginTop: 6, fontSize: 28, fontWeight: 700, letterSpacing: '-0.05em' }}>最大DeFi攻击</div>
-            <div className="small" style={{ fontSize: 13, marginTop: 8 }}></div>
+            <div className="k">持币量</div>
+            <div style={{ marginTop: 6, fontSize: 28, fontWeight: 700, letterSpacing: '-0.05em' }}>
+              {account ? (userBalance !== undefined ? fmtUnits(userBalance, 18, 4) : '--') : '连接钱包查看'}
+            </div>
+            <div className="small" style={{ fontSize: 13, marginTop: 8 }}>slisBNB</div>
           </div>
           <div style={{ width: 58, height: 58, borderRadius: 20, background: '#111', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>◎</div>
         </div>
@@ -73,7 +76,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
         <div className="card stat">
           <div className="k">我的今日燃烧</div>
           <div className="num mono">{me ? fmtUnits(me.todayBurned, 18, 4) : '--'}</div>
-          <div className="small">{dayId ? `Day #${dayId}` : ''}</div>
+          <div className="small">{dayId ? `第 ${dayId} 期` : ''}</div>
         </div>
         <div className="card stat">
           <div className="k">邀请奖励</div>
@@ -87,7 +90,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
         <div className="grid2">
           <div className="card inverse" style={{ boxShadow: 'none' }}>
             <div className="k">当前周期</div>
-            <div className="num mono">{dayId ? `Day #${dayId}` : '--'}</div>
+            <div className="num mono">{dayId ? `第 ${dayId} 期` : '--'}</div>
           </div>
           <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none' }}>
             <div className="k">我的状态</div>

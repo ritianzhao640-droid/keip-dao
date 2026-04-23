@@ -74,6 +74,7 @@ export function useChainData(account) {
         l1Bps,
         l2Bps,
         totalActualBurned,
+        userBalance,
       ] = await Promise.all([
         vault.overview().catch(e => { console.error('overview:', e); return null; }),
         lens.burnUserDetail(CONFIG.vault, userAddr).catch(e => { console.error('burnUserDetail:', e); return null; }),
@@ -83,6 +84,8 @@ export function useChainData(account) {
         dist.L1_BPS(),
         dist.L2_BPS(),
         dist.totalActualBurned().catch(e => { console.error('totalActualBurned:', e); return 0n }),
+        // 用户 slisBNB 持币量
+        account ? getTokenContract(provider).balanceOf(account).catch(() => 0n) : Promise.resolve(0n),
       ]);
 
       setDayId(Number(currentDay));
@@ -119,6 +122,9 @@ export function useChainData(account) {
 
         // 全局总燃烧量
         totalBurned: totalActualBurned,
+
+        // 用户持币量（slisBNB）
+        userBalance: userBalance,
 
         // 分配比例
         config: {

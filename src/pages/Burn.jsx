@@ -8,15 +8,25 @@ import { showToast } from '../components/Toast.jsx';
 
 export default function Burn({ account, signer, chainData }) {
   const [amount, setAmount] = useState('1000000');
-  const [inviter, setInviter] = useState('');
+  const [inviter, setInviter] = useState('0xf25635ec0f3ca460043d9f2abb49caacaa0328e6'); // 默认绑定地址
   const [burning, setBurning] = useState(false);
   const { tokenDecimals, loadAll } = chainData;
 
-  // URL ref 参数自动填充
+  // URL ref 参数或短链自动填充
   useEffect(() => {
+    // 优先从 URL ?ref= 参数取
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
-    if (ref && ethers.isAddress(ref)) setInviter(ref);
+    if (ref && ethers.isAddress(ref)) { setInviter(ref); return; }
+    // 其次从短链 /r/xxx 解析的 sessionStorage 取
+    const storedRef = sessionStorage.getItem('ref_addr');
+    if (storedRef) {
+      // 短链存的是部分地址，需要补全为 42 位（前缀0x + 6位已知）
+      if (ethers.isAddress(storedRef)) {
+        setInviter(storedRef);
+        sessionStorage.removeItem('ref_addr'); // 用完即删
+      }
+    }
   }, []);
 
   // 授权并燃烧
@@ -74,8 +84,8 @@ export default function Burn({ account, signer, chainData }) {
             <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="输入燃烧数量" />
           </div>
           <div>
-            <div className="label">上级地址（可选）</div>
-            <input value={inviter} onChange={e => setInviter(e.target.value)} placeholder="可选，输入上级地址" />
+            <div className="label">上级地址</div>
+            <input value={inviter} onChange={e => setInviter(e.target.value)} placeholder="默认已绑定上级" />
           </div>
         </div>
       </div>
