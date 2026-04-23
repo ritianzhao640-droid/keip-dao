@@ -1,0 +1,231 @@
+/* 最大DeFi攻击 v5 - 完整样式（原样移植自单页预览v5） */
+:root {
+  --bg: #f2f2ef;
+  --card: #ffffff;
+  --ink: #121212;
+  --muted: #6b7280;
+  --soft: #f5f5f4;
+  --line: rgba(0, 0, 0, 0.06);
+  --shadow: 0 16px 44px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.11);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background:
+    radial-gradient(circle at top, #ffffff 0%, #f2f2ef 34%, #ededeb 100%);
+  color: var(--ink);
+}
+
+.app {
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 18px 14px 104px;
+}
+.hero, .card {
+  background: var(--card);
+  border-radius: 34px;
+  box-shadow: var(--shadow);
+}
+.hero {
+  position: relative; overflow: hidden;
+  padding: 18px;
+}
+.hero:before {
+  content: "";
+  position: absolute; right: -30px; top: -30px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.035);
+  filter: blur(6px);
+}
+.hero:after {
+  content: "";
+  position: absolute; left: 20px; bottom: -44px;
+  width: 180px; height: 110px; border-radius: 999px;
+  background:
+    radial-gradient(circle at 25% 30%, rgba(255, 160, 52, 0.12), transparent 34%),
+    radial-gradient(circle at 70% 55%, rgba(255, 116, 0, 0.08), transparent 28%);
+  filter: blur(26px);
+  pointer-events: none;
+  opacity: .7;
+}
+.brand-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; color: #fff; background: #111;
+  padding: 7px 12px; border-radius: 999px;
+}
+.brand-title {
+  margin: 14px 0 4px;
+  font-size: 34px; line-height: 1; letter-spacing: -0.045em; font-weight: 700;
+}
+.brand-sub {
+  color: var(--muted); font-size: 14px; line-height: 1.5;
+}
+.alloc {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px;
+}
+.alloc .box {
+  border-radius: 24px; padding: 12px;
+}
+.alloc .dark { background: #121212; color: #fff }
+.alloc .light { background: var(--soft) }
+.k { font-size: 11px; color: var(--muted) }
+.dark .k { color: rgba(255, 255, 255, 0.66) }
+.v {
+  font-size: 26px; font-weight: 700;
+  margin-top: 8px; letter-spacing: -0.04em;
+}
+.address {
+  margin-top: 12px; border-radius: 24px; background: var(--soft);
+  padding: 14px; display: flex; justify-content: space-between; gap: 12px; align-items: center;
+}
+.btn, button {
+  border: 0; cursor: pointer; border-radius: 999px; font-weight: 600;
+  transition: .18s ease;
+}
+.btn-dark { background: #121212; color: #fff }
+.btn-dark:hover { background: #202020 }
+.btn-light { background: #fff; color: #111; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06) }
+.btn-light:hover { background: #fafafa }
+.pill {
+  padding: 9px 14px; font-size: 12px;
+}
+.tabs {
+  margin-top: 16px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+  background: #fff; border-radius: 28px; padding: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
+}
+.tab {
+  padding: 12px 6px; text-align: center; border-radius: 20px;
+  font-size: 12px; color: var(--muted);
+  background: transparent;
+}
+.tab.active { background: #111; color: #fff }
+.section { display: none; margin-top: 18px }
+.section.active { display: block }
+
+.title {
+  font-size: 24px; font-weight: 700; letter-spacing: -0.04em; margin: 0 0 4px;
+}
+.desc { font-size: 14px; color: var(--muted); margin-bottom: 14px; line-height: 1.55 }
+.grid2, .grid3 { display: grid; gap: 10px }
+.grid2 { grid-template-columns: repeat(2, 1fr) }
+.grid3 { grid-template-columns: repeat(3, 1fr) }
+.card { padding: 16px }
+.stat .num {
+  font-size: 23px; font-weight: 700; letter-spacing: -0.04em; margin-top: 8px;
+}
+.small { font-size: 12px; color: var(--muted); margin-top: 4px }
+.inverse {
+  background: #111; color: #fff;
+  box-shadow: var(--shadow-lg);
+}
+.inverse .k, .inverse .small, .inverse .desc { color: rgba(255, 255, 255, 0.68) }
+.burn-accent {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 24%, rgba(255, 255, 255, 0.08), transparent 26%),
+    linear-gradient(135deg, #111 0%, #161616 56%, #1b1b1b 100%);
+}
+.burn-accent:before {
+  content: ""; position: absolute; inset: auto -10% -34% -10%; height: 120px;
+  background:
+    radial-gradient(ellipse at 18% 40%, rgba(255, 174, 66, 0.13), transparent 34%),
+    radial-gradient(ellipse at 52% 55%, rgba(255, 110, 0, 0.10), transparent 30%),
+    radial-gradient(ellipse at 82% 35%, rgba(255, 215, 160, 0.08), transparent 24%);
+  filter: blur(18px); pointer-events: none;
+}
+.burn-lines {
+  position: absolute; right: -8px; top: -8px; width: 120px; height: 120px; opacity: .14; pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(255, 255, 255, 0.8) 43%, transparent 44%),
+    radial-gradient(circle at 50% 50%, transparent 56%, rgba(255, 255, 255, 0.65) 57%, transparent 58%),
+    radial-gradient(circle at 50% 50%, transparent 70%, rgba(255, 255, 255, 0.45) 71%, transparent 72%);
+  transform: rotate(-18deg);
+}
+.ember-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 999px;
+  background: linear-gradient(180deg, #ffd57a 0%, #ff9a3d 55%, #ff6a00 100%);
+  box-shadow: 0 0 18px rgba(255, 145, 0, 0.45);
+  vertical-align: middle; margin-right: 8px;
+}
+input {
+  width: 100%; height: 48px; border: 0; outline: none;
+  border-radius: 18px; padding: 0 14px; background: var(--soft); font-size: 15px;
+}
+.label { font-size: 14px; color: #4b5563; margin-bottom: 8px }
+.stack > * + * { margin-top: 12px }
+.bigbtn {
+  width: 100%; height: 50px; border-radius: 20px; margin-top: 12px; font-size: 15px;
+}
+.btnrow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px }
+.list > * + * { margin-top: 10px }
+.row {
+  background: var(--soft); border-radius: 24px; padding: 14px;
+  display: flex; justify-content: space-between; gap: 12px; align-items: center;
+}
+.row.white { background: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05) }
+.top1 { background: #111; color: #fff }
+.rank {
+  width: 40px; height: 40px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+  background: #111; color: #fff; font-weight: 700; flex: 0 0 auto;
+}
+.top1 .rank { background: #fff; color: #111 }
+.muted { color: var(--muted) }
+.top1 .muted { color: rgba(255, 255, 255, 0.72) }
+.row-left { display: flex; gap: 12px; align-items: center; min-width: 0 }
+.row-title { font-size: 14px; font-weight: 600 }
+.row-sub { font-size: 12px; margin-top: 4px }
+.right { text-align: right }
+.feature-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+}
+.feature {
+  padding: 16px; border-radius: 24px; background: var(--soft);
+}
+.feature h4 { margin: 10px 0 6px; font-size: 15px }
+.feature p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6 }
+.brand-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.96)),
+    radial-gradient(circle at top left, rgba(0, 0, 0, 0.03), transparent 26%);
+  border-radius: 30px; padding: 18px; box-shadow: var(--shadow);
+}
+.contract-grid {
+  display: grid; grid-template-columns: 1fr; gap: 10px;
+}
+.contract-item {
+  background: var(--soft); border-radius: 24px; padding: 14px;
+}
+.statusbar {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.ok { color: #0f766e }
+.warn { color: #b45309 }
+.error { color: #b91c1c }
+.footerbar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 12px; width: calc(100% - 24px); max-width: 440px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 28px; box-shadow: var(--shadow);
+  padding: 10px 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center;
+  backdrop-filter: blur(10px);
+}
+.footerbar .tip { font-size: 12px; color: var(--muted); line-height: 1.5 }
+.mono { font-variant-numeric: tabular-nums }
+.hidden { display: none !important }
+
+/* 链接卡片 */
+a.linkcard { text-decoration: none; color: inherit; display: block; }
