@@ -230,7 +230,7 @@ export function useChainData(account) {
             dayId: d,
             totalReward: summary.rewardPot,
             totalBurned: summary.totalBurned,
-            champion: top10_[0]?.[0] || ZERO,
+            champion: summary.finalized ? (top10_[0]?.[0] || ZERO) : ZERO,
             finalized: summary.finalized,
           });
         } catch {}

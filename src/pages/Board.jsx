@@ -1,7 +1,7 @@
 // 日榜页 - 真实链上数据（BurnDistributor dayTop10 + 历史战报）
 import { useState, useEffect } from 'react';
 import { CONFIG } from '../config.js';
-import { fmtUnits, fmtNum, shortAddr, formatCountdown, dayIdToDate } from '../contracts/index.js';
+import { fmtUnits, fmtNum, shortAddr, formatCountdown, dayIdToDate, ZERO } from '../contracts/index.js';
 
 export default function Board({ chainData }) {
   const { boardOverview, top10, top10Loading, history, historyLoading, dayId, displayDayId } = chainData;
@@ -124,7 +124,7 @@ export default function Board({ chainData }) {
               <div key={idx} className="row">
                 <div>
                   <div className="row-title">{dayIdToDate(d.dayId)}</div>
-                  <div className="row-sub muted">第{d.dayId - 20565}期 · 冠军 {shortAddr(d.champion)}</div>
+                  <div className="row-sub muted">第{d.dayId - 20565}期 · {d.finalized && d.champion !== ZERO ? `冠军 ${shortAddr(d.champion)}` : '冠军 --'}</div>
                 </div>
                 <div className="right">
                   <div className="row-title">{fmtUnits(d.totalReward, 18, 4)}</div>
