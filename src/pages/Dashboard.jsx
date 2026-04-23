@@ -1,19 +1,20 @@
-// 首页 - 对齐 v5 hero + brand-panel + grid2(4数据卡) + 倒计时+状态+feature-grid+btnrow
+// 首页 - 真实链上数据展示
 import { useState, useCallback } from 'react';
+import { ethers } from 'ethers';
 import { CONFIG } from '../config.js';
-import { fmtUnits, fmtNum, formatCountdown, shortAddr } from '../contracts/index.js';
-import { VAULT_ABI, ERC20_ABI } from '../contracts/index.js';
+import { fmtUnits, formatCountdown } from '../contracts/index.js';
+import { VAULT_ABI } from '../contracts/index.js';
 
 export default function Dashboard({ account, signer, chainData, onNavigate }) {
   const [claimingBurn, setClaimingBurn] = useState(false);
-  const { dashboard, dashboardLoading, dashboardError, tokenDecimals, providerError } = chainData;
+  const { dashboard, dashboardLoading, dashboardError, providerError, dayId } = chainData;
 
   // 领取燃烧奖励
   const handleClaimBurn = useCallback(async () => {
     if (!signer || !account) return;
     setClaimingBurn(true);
     try {
-      const vault = new (await import('ethers')).Contract(CONFIG.vault, VAULT_ABI, signer);
+      const vault = new ethers.Contract(CONFIG.vault, VAULT_ABI, signer);
       const tx = await vault.claimBurnReward();
       await tx.wait();
       await chainData.loadAll();
@@ -24,20 +25,24 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
     }
   }, [signer, account, chainData]);
 
-  // 状态栏文案
-  let statusText = '正在初始化链上读取…';
+  // 状态栏
+  let statusText = '正在读取链上数据…';
   let statusCls = '';
   if (providerError) { statusText = '网络连接失败：' + providerError; statusCls = 'error'; }
   else if (dashboardError) { statusText = '读取失败：' + dashboardError; statusCls = 'warn'; }
   else if (dashboard && !dashboardLoading) { statusText = '首页数据已从真实链上读取。'; statusCls = 'ok'; }
 
   // 数据安全访问
-  const ov = dashboard?.overview;
+  const ov = dashboard?.dayInfo;
   const me = dashboard?.me;
   const cfg = dashboard?.config;
 
+  // 倒计时：用 dayDuration - (当前时间戳 % dayDuration)
+  // 这里先用 dayId 展示，精确倒计时需要知道 dayStart
+  const countdownDisplay = '--:--:--';
+
   return (
-    <section id="home" className="section active">
+    <section id="home" className="section">
       <h2 className="title">首页</h2>
 
       {/* 品牌面板 */}
@@ -61,18 +66,18 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
         </div>
         <div className="card stat">
           <div className="k">永久池未领</div>
-          <div className="num mono">{ov ? fmtUnits(ov.currentUnclaimedWeightedReward, 18, 4) : '--'}</div>
+          <div className="num mono">{me ? fmtUnits(me.pendingWeighted, 18, 4) : '--'}</div>
           <div className="small">累计未领取</div>
         </div>
         <div className="card stat">
           <div className="k">我的今日燃烧</div>
-          <div className="num mono">{me ? fmtNum((me.todayBurned?.toString ? me.todayBurned.toString() : me.todayBurned), 4) : '--'}</div>
-          <div className="small" id="home-my-rank">{me ? (me.inTop10 ? `当前排名 #${me.rank}` : '当前未进前十') : '当前排名 --'}</div>
+          <div className="num mono">{me ? fmtUnits(me.todayBurned, 18, 4) : '--'}</div>
+          <div className="small">{dayId ? `Day #${dayId}` : ''}</div>
         </div>
         <div className="card stat">
           <div className="k">邀请奖励</div>
-          <div className="num mono">{me ? fmtUnits(me.pendingInviteReward, tokenDecimals, 4) : '--'}</div>
-          <div className="small">最大DeFi攻击</div>
+          <div className="num mono">{me ? fmtUnits(me.pendingInvite, 18, 4) : '--'}</div>
+          <div className="small">待领取</div>
         </div>
       </div>
 
@@ -80,21 +85,21 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
       <div className="card" style={{ marginTop: 10 }}>
         <div className="grid2">
           <div className="card inverse" style={{ boxShadow: 'none' }}>
-            <div className="k">今日倒计时</div>
-            <div className="num mono">{ov ? formatCountdown(ov.secondsRemaining) : '--:--:--'}</div>
+            <div className="k">当前周期</div>
+            <div className="num mono">{dayId ? `Day #${dayId}` : '--'}</div>
           </div>
           <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none' }}>
-            <div className="k">我的榜单状态</div>
-            <div className="num">{account ? (me ? (me.inTop10 ? `已进前十 · #${me.rank}` : '未进前十') : '加载中…') : '未连接钱包'}</div>
+            <div className="k">我的状态</div>
+            <div className="num">{account ? (me ? `${fmtUnits(me.selfBurned || 0n, 18, 4)} 已燃烧` : '加载中…') : '未连接钱包'}</div>
           </div>
           <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none' }}>
             <div className="k">待领日榜奖励</div>
-            <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingDailyReward, 18, 4) : '--'}</div>
+            <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingDaily, 18, 4) : '--'}</div>
             <div className="small">slisBNB</div>
           </div>
           <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none' }}>
-            <div className="k">待领永久奖励</div>
-            <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingWeightedReward, 18, 4) : '--'}</div>
+            <div className="k">总待领奖励</div>
+            <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingTotal, 18, 4) : '--'}</div>
             <div className="small">slisBNB</div>
           </div>
         </div>

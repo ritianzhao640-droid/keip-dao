@@ -1,28 +1,10 @@
-// 最小化 ABI 定义（仅包含实际调用的方法）
+// 真实合约 ABI（从链上提取，仅包含实际调用的方法）
 import { ethers } from 'ethers';
 import { CONFIG, ZERO } from '../config.js';
 
 export { ZERO };
 
-/** BurnLeaderboardLens 聚合读接口 */
-export const BURN_LENS_ABI = [
-  'function burnBoardDashboard(address vault, address user) view returns ((uint256 dayId,uint256 dayStart,uint256 dayEnd,uint256 secondsRemaining,uint256 dailyRewardPool,uint256 totalWeightedRewardNotified,uint256 totalWeightedRewardClaimed,uint256 currentUnclaimedWeightedReward,uint256 todayTotalBurned,uint256 todayParticipantCount,bool finalized) overview,(uint8 rank,address user,uint256 burned,uint256 rewardBps,uint256 estimatedReward)[10] top10,(uint256 todayBurned,bool inTop10,uint8 rank,uint256 gapToPrevRank,uint256 gapToTop10,uint256 pendingDailyReward,uint256 pendingWeightedReward,uint256 pendingInviteReward,uint256 cumulativeBurned) me,(uint256 marketingBps,uint256 dailyBoardBps,uint256 weightedPoolBps,uint256 l1ReferralBps,uint256 l2ReferralBps,uint256 dayDuration,uint256[10] rankBps,bool inviteEnabled,bool dailyBoardEnabled) config)',
-  'function currentBurnBoardTop10(address vault) view returns ((uint8 rank,address user,uint256 burned,uint256 rewardBps,uint256 estimatedReward)[10] rows)',
-  'function recentBurnBoardDays(address vault, uint256 count) view returns ((uint256 dayId,uint256 totalReward,uint256 totalBurned,address champion,uint256 championBurned,bool finalized)[] summaries)',
-  'function burnBoardByDay(address vault, uint256 dayId) view returns (tuple data)',
-  'function previewBurn(address vault, address user, uint256 amount, address inviter) view returns ((uint256 inputAmount,uint256 l1ReferralReward,uint256 l2ReferralReward,uint256 actualBurn,uint256 addedWeight,bool wouldEnterTop10,uint8 estimatedRank,uint256 currentPotEstimatedDailyReward) preview)',
-];
-
-/** Vault 写操作 + 查询 */
-export const VAULT_ABI = [
-  'function burn(uint256 amount, address inviter)',
-  'function claimBurnReward() returns (uint256)',
-  'function claimInviteReward() returns (uint256)',
-  'function pendingBurnReward(address user) view returns (uint256)',
-  'function pendingInviteReward(address user) view returns (uint256)',
-];
-
-/** ERC20 标准接口 */
+/** Token ERC20（最小化） */
 export const ERC20_ABI = [
   'function decimals() view returns (uint8)',
   'function symbol() view returns (string)',
@@ -30,6 +12,70 @@ export const ERC20_ABI = [
   'function allowance(address owner, address spender) view returns (uint256)',
   'function approve(address spender, uint256 amount) returns (bool)',
 ];
+
+/** Vault 合约完整读写接口 */
+export const VAULT_ABI = [
+  'function burn(uint256 amount, address inviter)',
+  'function claimBurnReward() returns (uint256)',
+  'function claimInviteReward() returns (uint256)',
+  'function overview() view returns (address _listaStakeManager, uint16 _marketingSharePercent, uint16 _dailyRankSharePercent, uint16 _weightPoolSharePercent, uint256 _vaultBnbBalance, uint256 _totalStakedBnb, uint256 _vaultSlisBalance, uint256 _myPendingBurnDividend, uint256 _myPendingInviteReward, uint256 _myCumulativeBurned)',
+  'function burnInfo(address user) view returns (uint256 rawBurned, uint256 weight, address inviter, bool hasInviter)',
+  'function pendingBurnReward(address user) view returns (uint256)',
+  'function pendingInviteReward(address user) view returns (uint256)',
+  'function slisBNB() view returns (address)',
+  'function taxToken() view returns (address)',
+  'function description() view returns (string)',
+];
+
+/** BurnDistributor 读接口 */
+export const BURN_DIST_ABI = [
+  'function currentDayId() view returns (uint256)',
+  'function DAY_DURATION() view returns (uint256)',
+  'function dayCursorInitialized() view returns (bool)',
+  'function lastProcessedDay() view returns (uint256)',
+  'function dayIsFinalized(uint256 dayId) view returns (bool)',
+  'function daySummary(uint256 dayId) view returns (uint256 rewardPot, uint256 totalBurned, uint256 participantCount, bool finalized)',
+  'function dayTop10(uint256 dayId) view returns (address[10] users, uint256[10] amounts)',
+  'function dayTotalBurned(uint256 dayId) view returns (uint256)',
+  'function dayParticipantCount(uint256 dayId) view returns (uint256)',
+  'function dayRewardPot(uint256 dayId) view returns (uint256)',
+  'function burnInfo(address user) view returns (uint256 rawBurned, uint256 weight, address inviter, bool hasInviter)',
+  'function pendingBurnReward(address user) view returns (uint256)',
+  'function pendingDailyBurnReward(address user) view returns (uint256)',
+  'function pendingInviteReward(address user) view returns (uint256)',
+  'function pendingWeightedBurnReward(address user) view returns (uint256)',
+  'function totalActualBurned() view returns (uint256)',
+  'function totalBurnWeight() view returns (uint256)',
+  'function totalWeightedRewardNotified() view returns (uint256)',
+  'function totalWeightedRewardClaimed() view returns (uint256)',
+  'function totalDailyRewardNotified() view returns (uint256)',
+  'function totalDailyRewardClaimed() view returns (uint256)',
+  'function accRewardPerWeight() view returns (uint256)',
+  'function L1_BPS() view returns (uint256)',
+  'function L2_BPS() view returns (uint256)',
+  'function BPS() view returns (uint256)',
+  'function MARKETING_BPS() view returns (uint256)',
+  'function DAILY_RANK_BPS() view returns (uint256)',
+  'function WEIGHT_POOL_BPS() view returns (uint256)',
+];
+
+/** MEYieldVaultLens 聚合读接口 */
+export const VAULT_LENS_ABI = [
+  'function burnUserDetail(address vault, address user) view returns (uint256 pendingTotal, uint256 pendingDaily, uint256 pendingWeighted, uint256 pendingInvite, uint256 selfBurned, uint256 weight, uint256 todayBurned)',
+  'function burnInviter(address vault, address user) view returns (address inviter, bool hasInviter, uint256 inviterBurnedAmount)',
+  'function burnUser(address vault, address user) view returns (uint256 pendingBurn, uint256 pendingInvite, uint256 selfBurned)',
+  'function vaultPools(address vault) view returns (uint256 pendingMarketing, uint256 totalDailyNotified, uint256 totalWeightedNotified, uint256 totalDailyClaimed, uint256 totalWeightedClaimed)',
+  'function vaultCore(address vault) view returns (address taxToken, address slisBNB, uint256 pendingTaxBnb)',
+  'function vaultStake(address vault) view returns (uint256 totalStakedBnb, uint256 totalSlisReceived, uint256 vaultSlisBalance)',
+  'function marketing(address vault) view returns (address wallet, uint256 pendingAmount, uint256 threshold)',
+  'function inviteCheck(address vault, address user, address inviterCandidate) view returns (bool canBind, uint8 reasonCode)',
+];
+
+/** 创建只读合约实例 */
+export function getVault(provider) { return new ethers.Contract(CONFIG.vault, VAULT_ABI, provider); }
+export function getBurnDist(provider) { return new ethers.Contract(CONFIG.burnDistributor, BURN_DIST_ABI, provider); }
+export function getVaultLens(provider) { return new ethers.Contract(CONFIG.vaultLens, VAULT_LENS_ABI, provider); }
+export function getTokenContract(provider) { return new ethers.Contract(CONFIG.token, ERC20_ABI, provider); }
 
 /** 创建只读 Provider（自动尝试多个 RPC） */
 export async function createReadProvider() {
@@ -67,6 +113,7 @@ export function fmtUnits(v, decimals = 18, d = 4) {
 
 export function formatCountdown(seconds) {
   const s = Number(seconds || 0);
+  if (s <= 0 || !isFinite(s)) return '--:--:--';
   const h = String(Math.floor(s / 3600)).padStart(2, '0');
   const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
   const sec = String(Math.floor(s % 60)).padStart(2, '0');

@@ -1,18 +1,8 @@
-// 链上数据聚合读取 Hook
-import { useState, useEffect, useCallback, useRef } from 'react';
+// 链上数据聚合读取 - 使用真实合约接口（Vault + BurnDistributor + MEYieldVaultLens）
+import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { CONFIG } from '../config.js';
-import { ZERO } from '../contracts/index.js';
-import { BURN_LENS_ABI, ERC20_ABI, createReadProvider, fmtUnits, fmtNum, formatCountdown, shortAddr } from '../contracts/index.js';
-
-/** 创建只读合约实例 */
-function getLens(provider) {
-  return new ethers.Contract(CONFIG.burnLeaderboardLens, BURN_LENS_ABI, provider);
-}
-
-function getTokenContract(provider) {
-  return new ethers.Contract(CONFIG.token, ERC20_ABI, provider);
-}
+import { ZERO, getVault, getBurnDist, getVaultLens, getTokenContract, createReadProvider, fmtUnits, fmtNum, formatCountdown, shortAddr } from '../contracts/index.js';
 
 export function useChainData(account) {
   const [provider, setProvider] = useState(null);
@@ -20,7 +10,7 @@ export function useChainData(account) {
   const [tokenDecimals, setTokenDecimals] = useState(18);
   const [tokenSymbol, setTokenSymbol] = useState('TOKEN');
 
-  // 首页 Dashboard 数据
+  // 首页 Dashboard 聚合数据（从多个合约组装）
   const [dashboard, setDashboard] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState(null);
@@ -29,15 +19,15 @@ export function useChainData(account) {
   const [top10, setTop10] = useState([]);
   const [top10Loading, setTop10Loading] = useState(false);
 
-  // 历史战报
+  // 历史战报（多日汇总）
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // 燃烧预览（保留接口但不再在UI使用）
-  const [preview, setPreview] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  // 日榜总览（当前日）
+  const [boardOverview, setBoardOverview] = useState(null);
+  const [dayId, setDayId] = useState(null);
 
-  // 初始化只读 Provider
+  // 初始化 Provider
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -46,7 +36,7 @@ export function useChainData(account) {
         if (cancelled) return;
         setProvider(p);
         setProviderError(null);
-        console.log('[ChainData] Provider 已连接, block:', await p.getBlockNumber());
+        console.log('[ChainData] Provider 已连接');
 
         // 读取代币信息
         const token = getTokenContract(p);
@@ -54,8 +44,8 @@ export function useChainData(account) {
         try { setTokenSymbol(await token.symbol()); } catch {}
       } catch (e) {
         if (!cancelled) {
-          console.error('[ChainData] Provider 初始化失败:', e);
-          setProviderError(e.message || '无法连接 BSC 网络');
+          console.error('[ChainData] Provider 失败:', e);
+          setProviderError(e.message || '无法连接 BSC');
           setProvider(null);
         }
       }
@@ -63,19 +53,96 @@ export function useChainData(account) {
     return () => { cancelled = true; };
   }, []);
 
-  // 加载首页聚合数据（burnBoardDashboard）
+  /** 加载首页全量数据 */
   const loadDashboard = useCallback(async () => {
     if (!provider) return;
     setDashboardLoading(true);
     setDashboardError(null);
     try {
-      const lens = getLens(provider);
+      const vault = getVault(provider);
+      const lens = getVaultLens(provider);
+      const dist = getBurnDist(provider);
       const userAddr = account || ZERO;
-      console.log('[ChainData] 调用 burnBoardDashboard vault=', CONFIG.vault, 'user=', userAddr);
-      const data = await lens.burnBoardDashboard(CONFIG.vault, userAddr);
-      console.log('[ChainData] burnBoardDashboard 返回:', JSON.stringify(data));
+
+      // 并行读取所有数据源
+      const [
+        overview,
+        userDetail,
+        currentDay,
+        daySummary_,
+        top10Raw,
+        l1Bps,
+        l2Bps,
+      ] = await Promise.all([
+        vault.overview().catch(e => { console.error('overview:', e); return null; }),
+        lens.burnUserDetail(CONFIG.vault, userAddr).catch(e => { console.error('burnUserDetail:', e); return null; }),
+        dist.currentDayId().catch(e => { console.error('currentDayId:', e); return 0n }),
+        dist.daySummary(await dist.currentDayId()).catch(e => { console.error('daySummary:', e); return null; }),
+        dist.dayTop10(await dist.currentDayId()).catch(e => { console.error('dayTop10:', e); return [[], []]; }),
+        dist.L1_BPS(),
+        dist.L2_BPS(),
+      ]);
+
+      setDayId(Number(currentDay));
+
+      // 组装 dashboard 数据
+      const data = {
+        // Vault overview 全局
+        overview: overview ? {
+          marketingSharePercent: Number(overview._marketingSharePercent),
+          dailyRankSharePercent: Number(overview._dailyRankSharePercent),
+          weightPoolSharePercent: Number(overview._weightPoolSharePercent),
+          totalStakedBnb: overview._totalStakedBnb,
+          vaultSlisBalance: overview._vaultSlisBalance,
+        } : null,
+
+        // 用户个人数据（来自 Lens）
+        me: userDetail ? {
+          pendingTotal: userDetail.pendingTotal,
+          pendingDaily: userDetail.pendingDaily,
+          pendingWeighted: userDetail.pendingWeighted,
+          pendingInvite: userDetail.pendingInvite,
+          selfBurned: userDetail.selfBurned,
+          weight: userDetail.weight,
+          todayBurned: userDetail.todayBurned,
+        } : null,
+
+        // 今日榜单概览（来自 BurnDistributor）
+        dayInfo: daySummary_ ? {
+          dailyRewardPool: daySummary_.rewardPot,
+          todayTotalBurned: daySummary_.totalBurned,
+          participantCount: daySummary_.participantCount,
+          finalized: daySummary_.finalized,
+        } : null,
+
+        // 分配比例
+        config: {
+          l1ReferralBps: Number(l1Bps),
+          l2ReferralBps: Number(l2Bps),
+          marketingBps: 3000,   // 30%
+          dailyBoardBps: 2000,  // 20%
+          weightedPoolBps: 5000, // 50%
+        },
+      };
+
+      console.log('[ChainData] Dashboard 数据已组装:', JSON.stringify(data));
       setDashboard(data);
       setDashboardError(null);
+
+      // 同时更新 boardOverview 和 top10
+      setBoardOverview(daySummary_);
+      if (Array.isArray(top10Raw) && top10Raw.length === 2) {
+        const users = top10Raw[0];
+        const amounts = top10Raw[1];
+        const list = users.map((u, i) => ({
+          rank: i + 1,
+          user: u,
+          burned: amounts[i] || 0n,
+          estimatedReward: 0n, // 需要 rankBps 计算，先显示 0
+        })).filter(r => r.user && r.user !== ZERO);
+        setTop10(list);
+      }
+
     } catch (e) {
       console.error('[ChainData] loadDashboard 失败:', e);
       setDashboardError(e.shortMessage || e.message || '读取失败');
@@ -84,16 +151,22 @@ export function useChainData(account) {
     }
   }, [provider, account]);
 
-  // 加载 Top10
+  /** 加载 Top10（单独刷新） */
   const loadTop10 = useCallback(async () => {
     if (!provider) return;
     setTop10Loading(true);
     try {
-      const lens = getLens(provider);
-      console.log('[ChainData] 调用 currentBurnBoardTop10 vault=', CONFIG.vault);
-      const rows = await lens.currentBurnBoardTop10(CONFIG.vault);
-      console.log('[ChainData] top10 返回:', JSON.stringify(rows));
-      setTop10(rows.filter(r => r.user && r.user !== ZERO));
+      const dist = getBurnDist(provider);
+      const cid = await dist.currentDayId();
+      const [users, amounts] = await dist.dayTop10(cid);
+      const list = users.map((u, i) => ({
+        rank: i + 1,
+        user: u,
+        burned: amounts[i] || 0n,
+        estimatedReward: 0n,
+      })).filter(r => r.user && r.user !== ZERO);
+      setTop10(list);
+      console.log('[ChainData] Top10 已加载:', list.length, '条');
     } catch (e) {
       console.error('[ChainData] loadTop10 失败:', e);
       setTop10([]);
@@ -102,16 +175,30 @@ export function useChainData(account) {
     }
   }, [provider]);
 
-  // 加载历史战报
+  /** 加载历史战报（最近 N 天） */
   const loadHistory = useCallback(async (count = 6) => {
     if (!provider) return;
     setHistoryLoading(true);
     try {
-      const lens = getLens(provider);
-      console.log('[ChainData] 调用 recentBurnBoardDays count=', count);
-      const days = await lens.recentBurnBoardDays(CONFIG.vault, count);
-      console.log('[ChainData] history 返回:', JSON.stringify(days));
+      const dist = getBurnDist(provider);
+      const lastDay = await dist.lastProcessedDay();
+      const startDay = Number(lastDay) > count ? Number(lastDay) - count + 1 : 1;
+      const days = [];
+      for (let d = startDay; d <= Number(lastDay); d++) {
+        try {
+          const summary = await dist.daySummary(d);
+          const top10_ = await dist.dayTop10(d);
+          days.push({
+            dayId: d,
+            totalReward: summary.rewardPot,
+            totalBurned: summary.totalBurned,
+            champion: top10_[0]?.[0] || ZERO,
+            finalized: summary.finalized,
+          });
+        } catch {}
+      }
       setHistory(days);
+      console.log('[ChainData] History 已加载:', days.length, '天');
     } catch (e) {
       console.error('[ChainData] loadHistory 失败:', e);
       setHistory([]);
@@ -120,43 +207,15 @@ export function useChainData(account) {
     }
   }, [provider]);
 
-  // 燃烧预览（防抖，保留接口）
-  const previewTimerRef = useRef(null);
-  const loadPreview = useCallback(async (amountInput, inviterValue) => {
-    if (!provider || !amountInput || Number(amountInput) <= 0) {
-      setPreview(null);
-      return;
-    }
-    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+  /** 燃烧预览（保留接口但不再UI使用） */
+  const loadPreview = useCallback(async (_amountInput, _inviterValue) => {}, []);
 
-    previewTimerRef.current = setTimeout(async () => {
-      setPreviewLoading(true);
-      try {
-        const lens = getLens(provider);
-        const amountWei = ethers.parseUnits(amountInput, tokenDecimals);
-        const inviter = ethers.isAddress(inviterValue) ? inviterValue : ZERO;
-        const result = await lens.previewBurn(
-          CONFIG.vault,
-          account || ZERO,
-          amountWei,
-          inviter
-        );
-        setPreview(result);
-      } catch (e) {
-        console.error('[ChainData] previewBurn 失败:', e);
-        setPreview(null);
-      } finally {
-        setPreviewLoading(false);
-      }
-    }, 450);
-  }, [provider, account, tokenDecimals]);
-
-  // 全量加载
+  /** 全量加载 */
   const loadAll = useCallback(async () => {
     await Promise.all([loadDashboard(), loadTop10(), loadHistory()]);
   }, [loadDashboard, loadTop10, loadHistory]);
 
-  // 连接后自动加载 + 首次 provider 就绪时也加载
+  // Provider 就绪即自动加载
   useEffect(() => {
     if (provider) loadAll();
   }, [provider, account, loadAll]);
@@ -173,8 +232,10 @@ export function useChainData(account) {
     top10Loading,
     history,
     historyLoading,
-    preview,
-    previewLoading,
+    boardOverview,
+    dayId,
+    preview: null,
+    previewLoading: false,
     loadDashboard,
     loadTop10,
     loadHistory,

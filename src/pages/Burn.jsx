@@ -3,7 +3,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { CONFIG } from '../config.js';
 import { ZERO } from '../contracts/index.js';
-import { fmtUnits } from '../contracts/index.js';
 import { VAULT_ABI, ERC20_ABI } from '../contracts/index.js';
 
 export default function Burn({ account, signer, chainData }) {
