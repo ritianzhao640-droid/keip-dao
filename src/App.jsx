@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 import { CONFIG } from './config.js';
 import { useWallet } from './hooks/useWallet.js';
 import { useChainData } from './hooks/useChainData.js';
-import { shortAddr } from './contracts/index.js';
+import { shortAddr, fmtUnits } from './contracts/index.js';
 import BottomNav from './components/BottomNav.jsx';
 import { ToastProvider } from './components/Toast.jsx';
 
@@ -68,9 +68,9 @@ export default function App() {
         <h1 className="brand-title">最大DeFi攻击</h1>
         <div className="brand-sub"></div>
         <div className="alloc">
-          <div className="box dark"><div className="k">营销</div><div className="v">30%</div></div>
-          <div className="box light"><div className="k">日榜</div><div className="v">20%</div></div>
-          <div className="box light"><div className="k">永久权重</div><div className="v">50%</div></div>
+          <div className="box dark"><div className="k">总质押BNB</div><div className="v">{chainData.dashboard?.overview ? fmtUnits(chainData.dashboard.overview.totalStakedBnb, 18, 4) : '--'}</div></div>
+          <div className="box light"><div className="k">待质押BNB</div><div className="v">{chainData.dashboard?.overview ? fmtUnits(chainData.dashboard.overview.vaultBnbBalance, 18, 4) : '--'}</div></div>
+          <div className="box light"><div className="k">奖励金库</div><div className="v">{chainData.dashboard?.overview ? fmtUnits(chainData.dashboard.overview.vaultSlisBalance, 18, 2) : '--'}</div></div>
         </div>
         <div className="address">
           <div className="tip">

@@ -94,11 +94,12 @@ export function useChainData(account) {
       const data = {
         // Vault overview 全局
         overview: overview ? {
-          marketingSharePercent: Number(overview._marketingSharePercent),
-          dailyRankSharePercent: Number(overview._dailyRankSharePercent),
-          weightPoolSharePercent: Number(overview._weightPoolSharePercent),
-          totalStakedBnb: overview._totalStakedBnb,
-          vaultSlisBalance: overview._vaultSlisBalance,
+          marketingSharePercent: Number(overview[1]),  // _marketingSharePercent
+          dailyRankSharePercent: Number(overview[2]),   // _dailyRankSharePercent
+          weightPoolSharePercent: Number(overview[3]),  // _weightPoolSharePercent
+          vaultBnbBalance: overview[4],                  // _vaultBnbBalance（待质押BNB）
+          totalStakedBnb: overview[5],                   // _totalStakedBnb（总质押BNB）
+          vaultSlisBalance: overview[6],                 // _vaultSlisBalance（slisBNB金库）
         } : null,
 
         // 用户个人数据（来自 Lens）
