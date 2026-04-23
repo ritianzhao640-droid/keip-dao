@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { CONFIG } from '../config.js';
-import { fmtUnits, shortAddr } from '../contracts/index.js';
+import { fmtUnits, shortAddr, ZERO } from '../contracts/index.js';
 import { VAULT_ABI } from '../contracts/index.js';
 import { showToast } from '../components/Toast.jsx';
 
@@ -48,10 +48,12 @@ export default function Invite({ account, signer, chainData }) {
       <div className="card list">
         <div className="row">
           <div>
-            <div className="k">我的邀请地址</div>
-            <div className="row-title" style={{ marginTop: 6 }}>{account ? shortAddr(account) : '未连接钱包'}</div>
+            <div className="k">我的上级地址</div>
+            <div className="row-title" style={{ marginTop: 6 }}>
+              {me?.hasInviter && me?.inviter !== ZERO ? shortAddr(me.inviter) : '未绑定'}
+            </div>
           </div>
-          <button className="btn-dark pill" onClick={() => copyText(account)}>复制</button>
+          <button className="btn-dark pill" onClick={() => copyText(me?.hasInviter && me?.inviter !== ZERO ? me.inviter : '')}>复制</button>
         </div>
 
         <div className="row">

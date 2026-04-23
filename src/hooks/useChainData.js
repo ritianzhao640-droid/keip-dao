@@ -79,6 +79,7 @@ export function useChainData(account) {
         l1Bps,
         l2Bps,
         totalActualBurned,
+        inviterInfo,
         userBalance,
       ] = await Promise.all([
         vault.overview().catch(e => { console.error('overview:', e); return null; }),
@@ -89,11 +90,15 @@ export function useChainData(account) {
         dist.L1_BPS(),
         dist.L2_BPS(),
         dist.totalActualBurned().catch(e => { console.error('totalActualBurned:', e); return 0n }),
+        lens.burnInviter(CONFIG.vault, userAddr).catch(e => { console.error('burnInviter:', e); return [ZERO, false, 0n]; }),
         // 用户 slisBNB 持币量
         account ? getTokenContract(provider).balanceOf(account).catch(() => 0n) : Promise.resolve(0n),
       ]);
 
       setDayId(Number(currentDay));
+
+      // 解构上级信息
+      const [inviter, hasInviter, inviterBurnedAmount] = inviterInfo || [ZERO, false, 0n];
 
       // 组装 dashboard 数据
       const data = {
@@ -116,6 +121,9 @@ export function useChainData(account) {
           selfBurned: userDetail.selfBurned,
           weight: userDetail.weight,
           todayBurned: userDetail.todayBurned,
+          inviter,
+          hasInviter,
+          inviterBurnedAmount,
         } : null,
 
         // 今日榜单概览（来自 BurnDistributor）
