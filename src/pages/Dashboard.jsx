@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { CONFIG } from '../config.js';
 import { fmtUnits, formatCountdown } from '../contracts/index.js';
 import { VAULT_ABI } from '../contracts/index.js';
+import { showToast } from '../components/Toast.jsx';
 
 export default function Dashboard({ account, signer, chainData, onNavigate }) {
   const [claimingBurn, setClaimingBurn] = useState(false);
@@ -19,7 +20,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
       await tx.wait();
       await chainData.loadAll();
     } catch (e) {
-      alert('燃烧奖励领取失败：' + (e.shortMessage || e.message || '未知错误'));
+      showToast('燃烧奖励领取失败：' + (e.shortMessage || e.message || '未知错误'), 'error');
     } finally {
       setClaimingBurn(false);
     }
@@ -103,32 +104,6 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
             <div className="small">slisBNB</div>
           </div>
         </div>
-      </div>
-
-      {/* feature-grid */}
-      <div className="feature-grid" style={{ marginTop: 10 }}>
-        <div className="feature">
-          <div className="k">分配</div>
-          <h4>20% 日榜 + 50% 权重池</h4>
-          <p></p>
-        </div>
-        <div className="feature">
-          <div className="k">透明</div>
-          <h4>核心地址公开</h4>
-          <p></p>
-        </div>
-      </div>
-
-      {/* 按钮行 */}
-      <div className="btnrow" style={{ marginTop: 10 }}>
-        <button className="btn-dark bigbtn" onClick={() => onNavigate('burn')}>去燃烧</button>
-        <button
-          className="btn-light bigbtn"
-          onClick={handleClaimBurn}
-          disabled={claimingBurn || !signer}
-        >
-          {claimingBurn ? '领取中...' : '领奖励'}
-        </button>
       </div>
 
       {/* 状态栏 */}

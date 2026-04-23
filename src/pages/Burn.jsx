@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { CONFIG } from '../config.js';
 import { ZERO } from '../contracts/index.js';
 import { VAULT_ABI, ERC20_ABI } from '../contracts/index.js';
+import { showToast } from '../components/Toast.jsx';
 
 export default function Burn({ account, signer, chainData }) {
   const [amount, setAmount] = useState('1000000');
@@ -21,7 +22,7 @@ export default function Burn({ account, signer, chainData }) {
   // 授权并燃烧
   const handleApproveAndBurn = useCallback(async () => {
     if (!signer || !account) return;
-    if (!amount || Number(amount) <= 0) { alert('请输入有效燃烧数量。'); return; }
+    if (!amount || Number(amount) <= 0) { showToast('请输入有效燃烧数量', 'warn'); return; }
 
     setBurning(true);
     try {
@@ -41,7 +42,7 @@ export default function Burn({ account, signer, chainData }) {
 
       await loadAll();
     } catch (e) {
-      alert('燃烧失败：' + (e.shortMessage || e.message || '未知错误'));
+      showToast('燃烧失败：' + (e.shortMessage || e.message || '未知错误'), 'error');
     } finally {
       setBurning(false);
     }

@@ -18,11 +18,32 @@ export default function Community() {
   return (
     <section id="community" className="section">
       <h2 className="title">社区</h2>
-      <div className="desc">把</div>
+
+      {/* 多签钱包 - 标题旁并行 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -8 }}>
+        <a
+          href={`${CONFIG.bscScanBase}${CONFIG.multisigWallet}`}
+          target="_blank"
+          rel="noreferrer"
+          className="pill"
+          style={{
+            fontSize: 12,
+            color: '#6b7280',
+            background: 'var(--soft)',
+            padding: '5px 10px',
+            borderRadius: 999,
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4
+          }}
+        >
+          🏛 多签钱包 {shortAddr(CONFIG.multisigWallet)}
+        </a>
+      </div>
 
       {/* 品牌面板 */}
       <div className="brand-panel">
-        <div className="k">项目</div>
         <div style={{ marginTop: 8, fontSize: 30, lineHeight: 1.08, fontWeight: 700, letterSpacing: '-0.05em' }}>
           不是短线噱头，<br />而是把燃烧做成一种长期参与方式。
         </div>
@@ -48,21 +69,6 @@ export default function Community() {
         <div className="feature">
           <div className="k">分配</div><h4>短期榜单 + 长期权重</h4>
           <p>20% 日榜与 50% 永久权重池并行，避免只有短线激励。</p>
-        </div>
-      </div>
-
-      {/* 多签钱包 */}
-      <div className="card" style={{ marginTop: 10 }}>
-        <div className="title" style={{ fontSize: 22 }}>多签钱包</div>
-        <div className="row white">
-          <div>
-            <div className="k">多签地址</div>
-            <div className="row-title" style={{ marginTop: 6 }}>{shortAddr(CONFIG.multisigWallet)}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-dark pill" onClick={() => copyText(CONFIG.multisigWallet)}>复制</button>
-            <button className="btn-light pill" onClick={() => window.open(`${CONFIG.bscScanBase}${CONFIG.multisigWallet}`, '_blank')}>BscScan</button>
-          </div>
         </div>
       </div>
 

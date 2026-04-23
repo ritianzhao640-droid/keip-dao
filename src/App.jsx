@@ -5,6 +5,7 @@ import { useWallet } from './hooks/useWallet.js';
 import { useChainData } from './hooks/useChainData.js';
 import { shortAddr } from './contracts/index.js';
 import BottomNav from './components/BottomNav.jsx';
+import { ToastProvider } from './components/Toast.jsx';
 
 // 懒加载页面
 import Dashboard from './pages/Dashboard.jsx';
@@ -51,6 +52,7 @@ export default function App() {
   const ActivePage = PAGES[activeTab] || Dashboard;
 
   return (
+    <ToastProvider>
     <div className="app">
       {/* Hero */}
       <div className="hero">
@@ -71,7 +73,7 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
-              className={`btn-dark pill ${chainData.dashboardLoading || chainData.top10Loading || chainData.historyLoading ? 'disabled' : ''}`}
+              className={`btn-dark pill ${(chainData.dashboardLoading || chainData.top10Loading || chainData.historyLoading) ? 'disabled btn-refresh-spin' : ''}`}
               onClick={chainData.loadAll}
               disabled={chainData.dashboardLoading || chainData.top10Loading || chainData.historyLoading}
               title="刷新链上数据"
@@ -105,5 +107,6 @@ export default function App() {
       />
 
     </div>
+    </ToastProvider>
   );
 }
