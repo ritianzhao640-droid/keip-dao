@@ -73,6 +73,7 @@ export function useChainData(account) {
         top10Raw,
         l1Bps,
         l2Bps,
+        totalActualBurned,
       ] = await Promise.all([
         vault.overview().catch(e => { console.error('overview:', e); return null; }),
         lens.burnUserDetail(CONFIG.vault, userAddr).catch(e => { console.error('burnUserDetail:', e); return null; }),
@@ -81,6 +82,7 @@ export function useChainData(account) {
         dist.dayTop10(await dist.currentDayId()).catch(e => { console.error('dayTop10:', e); return [[], []]; }),
         dist.L1_BPS(),
         dist.L2_BPS(),
+        dist.totalActualBurned().catch(e => { console.error('totalActualBurned:', e); return 0n }),
       ]);
 
       setDayId(Number(currentDay));
@@ -114,6 +116,9 @@ export function useChainData(account) {
           participantCount: daySummary_.participantCount,
           finalized: daySummary_.finalized,
         } : null,
+
+        // 全局总燃烧量
+        totalBurned: totalActualBurned,
 
         // 分配比例
         config: {

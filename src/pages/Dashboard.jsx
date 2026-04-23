@@ -36,7 +36,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
   // 数据安全访问
   const ov = dashboard?.dayInfo;
   const me = dashboard?.me;
-  const cfg = dashboard?.config;
+  const totalBurned = dashboard?.totalBurned;
 
   // 倒计时：用 dayDuration - (当前时间戳 % dayDuration)
   // 这里先用 dayId 展示，精确倒计时需要知道 dayStart
@@ -66,9 +66,9 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
           <div className="small">slisBNB</div>
         </div>
         <div className="card stat">
-          <div className="k">永久池未领</div>
-          <div className="num mono">{me ? fmtUnits(me.pendingWeighted, 18, 4) : '--'}</div>
-          <div className="small">累计未领取</div>
+          <div className="k">总燃烧量</div>
+          <div className="num mono">{totalBurned ? fmtUnits(totalBurned, 18, 2) : '--'}</div>
+          <div className="small">slisBNB</div>
         </div>
         <div className="card stat">
           <div className="k">我的今日燃烧</div>
