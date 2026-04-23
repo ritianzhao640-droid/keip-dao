@@ -11,9 +11,15 @@ export default function Invite({ account, signer, chainData }) {
   const { dashboard, tokenDecimals } = chainData;
   const me = dashboard?.me;
 
-  // 复制
+  // 复制（带反馈）
   const copyText = (v) => {
-    if (v) navigator.clipboard?.writeText(v).catch(() => {});
+    if (!v) {
+      showToast('无内容可复制', 'warning');
+      return;
+    }
+    navigator.clipboard?.writeText(v)
+      .then(() => showToast('已复制到剪贴板', 'success'))
+      .catch(() => showToast('复制失败', 'error'));
   };
 
   // 领取邀请奖励
