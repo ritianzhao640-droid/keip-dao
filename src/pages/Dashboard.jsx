@@ -55,7 +55,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
             <div style={{ marginTop: 6, fontSize: 28, fontWeight: 700, letterSpacing: '-0.05em' }}>
               {account ? (userBalance !== undefined ? fmtUnits(userBalance, 18, 4) : '--') : '连接钱包查看'}
             </div>
-            <div className="small" style={{ fontSize: 13, marginTop: 8 }}>slisBNB</div>
+            <div className="small" style={{ fontSize: 13, marginTop: 8 }}>最大DeFi攻击</div>
           </div>
           <div style={{ width: 58, height: 58, borderRadius: 20, background: '#111', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>◎</div>
         </div>
@@ -66,12 +66,12 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
         <div className="card stat">
           <div className="k">今日榜单池</div>
           <div className="num mono">{ov ? fmtUnits(ov.dailyRewardPool, 18, 4) : '--'}</div>
-          <div className="small">slisBNB</div>
+          <div className="small">最大DeFi攻击</div>
         </div>
         <div className="card stat">
           <div className="k">总燃烧量</div>
           <div className="num mono">{totalBurned ? fmtUnits(totalBurned, 18, 2) : '--'}</div>
-          <div className="small">slisBNB</div>
+          <div className="small">最大DeFi攻击</div>
         </div>
         <div className="card stat">
           <div className="k">我的今日燃烧</div>
@@ -100,7 +100,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
             <div style={{ flex: 1 }}>
               <div className="k">待领日榜奖励</div>
               <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingDaily, 18, 4) : '--'}</div>
-              <div className="small">slisBNB</div>
+              <div className="small">最大DeFi攻击</div>
             </div>
             <div style={{ height: '44px', marginTop: '12px', opacity: 0.5, fontSize: '13px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               通过"总待领奖励"按钮领取
@@ -110,7 +110,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
             <div style={{ flex: 1 }}>
               <div className="k">总待领奖励</div>
               <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingTotal, 18, 4) : '--'}</div>
-              <div className="small">slisBNB</div>
+              <div className="small">最大DeFi攻击</div>
             </div>
             <button 
               className="btn-dark" 
@@ -118,7 +118,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
               disabled={claimingBurn || !signer || (me && me.pendingTotal <= 0n)}
               style={{ marginTop: '12px', width: '100%', fontSize: '14px', padding: '8px 12px' }}
             >
-              {claimingBurn ? '领取中…' : '领取slisBNB奖励'}
+              {claimingBurn ? '领取中…' : '领取最大DeFi攻击奖励'}
             </button>
           </div>
         </div>
