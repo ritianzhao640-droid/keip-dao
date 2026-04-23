@@ -32,11 +32,12 @@ export default function Invite({ account, signer, chainData }) {
     }
   }, [signer, account, chainData]);
 
-  // 精简邀请链接显示
-  const shortInviteLink = account
-    ? `${window.location.origin}/r/${account.slice(2, 8)}`
+  // 精简邀请链接展示（8位短码，纯展示用；复制时用完整?ref=链接）
+  const shortCode = account ? account.slice(2, 10) : '';
+  const displayLink = account
+    ? `${window.location.origin}/r/${shortCode}`
     : '';
-  const fullInviteLink = account
+  const copyLink = account
     ? `${window.location.origin}${window.location.pathname}?ref=${account}`
     : '';
 
@@ -57,10 +58,10 @@ export default function Invite({ account, signer, chainData }) {
           <div>
             <div className="k">邀请链接</div>
             <div className="row-title" style={{ marginTop: 6 }}>
-              {account ? shortInviteLink : '连接钱包后生成'}
+              {account ? displayLink : '连接钱包后生成'}
             </div>
           </div>
-          <button className="btn-dark pill" onClick={() => copyText(fullInviteLink || shortInviteLink)}>复制</button>
+          <button className="btn-dark pill" onClick={() => copyText(copyLink || displayLink)}>复制</button>
         </div>
 
         <div className="grid2">

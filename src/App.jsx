@@ -44,13 +44,12 @@ export default function App() {
 
   // 初始加载时激活首页 + 解析短链
   useEffect(() => {
-    // 短链路由: /r/f25635 -> ?ref=0xf25635...
+    // 短链路由: /r/f25635ec -> ?ref=0xf25635ec...（展示用，实际复制完整?ref=链接）
     const path = window.location.pathname;
-    const shortMatch = path.match(/^\/r\/([a-fA-F0-9]{6})$/);
+    const shortMatch = path.match(/^\/r\/([a-fA-F0-9]{8})$/);
     if (shortMatch) {
-      // 还原为完整地址格式，存入 sessionStorage 供 Burn 页面使用
-      const partial = '0x' + shortMatch[1];
-      sessionStorage.setItem('ref_addr', partial);
+      // 8位短码无法还原完整地址，仅做展示/品牌用途
+      // 实际绑定依赖: 1. URL完整?ref=参数  2. 默认绑定地址
       // 清理 URL
       window.history.replaceState(null, '', window.location.pathname.replace(/\/r\/[a-fA-F0-9]+/, ''));
     }
