@@ -96,15 +96,30 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
             <div className="k">我的状态</div>
             <div className="num">{account ? (me ? `${fmtUnits(me.selfBurned || 0n, 18, 4)} 已燃烧` : '加载中…') : '未连接钱包'}</div>
           </div>
-          <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none' }}>
-            <div className="k">待领日榜奖励</div>
-            <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingDaily, 18, 4) : '--'}</div>
-            <div className="small">slisBNB</div>
+          <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ flex: 1 }}>
+              <div className="k">待领日榜奖励</div>
+              <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingDaily, 18, 4) : '--'}</div>
+              <div className="small">slisBNB</div>
+            </div>
+            <div style={{ height: '44px', marginTop: '12px', opacity: 0.5, fontSize: '13px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              通过"总待领奖励"按钮领取
+            </div>
           </div>
-          <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none' }}>
-            <div className="k">总待领奖励</div>
-            <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingTotal, 18, 4) : '--'}</div>
-            <div className="small">slisBNB</div>
+          <div className="card" style={{ background: 'var(--soft)', boxShadow: 'none', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ flex: 1 }}>
+              <div className="k">总待领奖励</div>
+              <div className="num mono" style={{ fontSize: 20 }}>{me ? fmtUnits(me.pendingTotal, 18, 4) : '--'}</div>
+              <div className="small">slisBNB</div>
+            </div>
+            <button 
+              className="btn-dark" 
+              onClick={handleClaimBurn} 
+              disabled={claimingBurn || !signer || (me && me.pendingTotal <= 0n)}
+              style={{ marginTop: '12px', width: '100%', fontSize: '14px', padding: '8px 12px' }}
+            >
+              {claimingBurn ? '领取中…' : '领取slisBNB奖励'}
+            </button>
           </div>
         </div>
       </div>
