@@ -11,15 +11,51 @@ export default function Invite({ account, signer, chainData }) {
   const { dashboard, tokenDecimals } = chainData;
   const me = dashboard?.me;
 
-  // 复制（带反馈）
+  // 复制（带反馈，支持降级方案）
   const copyText = (v) => {
     if (!v) {
       showToast('无内容可复制', 'warning');
       return;
     }
-    navigator.clipboard?.writeText(v)
-      .then(() => showToast('已复制到剪贴板', 'success'))
-      .catch(() => showToast('复制失败', 'error'));
+    
+    // 优先使用现代 clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(v)
+        .then(() => showToast('已复制到剪贴板', 'success'))
+        .catch(() => {
+          // 降级到传统方法
+          fallbackCopyText(v);
+        });
+    } else {
+      // 浏览器不支持 clipboard API
+      fallbackCopyText(v);
+    }
+    
+    // 传统复制方法
+    function fallbackCopyText(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('已复制到剪贴板', 'success');
+        } else {
+          showToast('复制失败，请手动选择文本复制', 'error');
+        }
+      } catch (err) {
+        console.error('复制失败:', err);
+        showToast('复制失败，请手动选择文本复制', 'error');
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
   };
 
   // 领取邀请奖励
@@ -59,7 +95,13 @@ export default function Invite({ account, signer, chainData }) {
               {me?.hasInviter && me?.inviter !== ZERO ? shortAddr(me.inviter) : '未绑定'}
             </div>
           </div>
-          <button className="btn-dark pill" onClick={() => copyText(me?.hasInviter && me?.inviter !== ZERO ? me.inviter : '')}>复制</button>
+          <button 
+            className="btn-dark pill" 
+            onClick={() => copyText(me?.inviter)} 
+            disabled={!me?.hasInviter || me?.inviter === ZERO}
+          >
+            复制
+          </button>
         </div>
 
         <div className="row">
@@ -69,7 +111,13 @@ export default function Invite({ account, signer, chainData }) {
               {account ? displayLink : '连接钱包后生成'}
             </div>
           </div>
-          <button className="btn-dark pill" onClick={() => copyText(copyLink || displayLink)}>复制</button>
+          <button 
+            className="btn-dark pill" 
+            onClick={() => copyText(copyLink || displayLink)} 
+            disabled={!account}
+          >
+            复制
+          </button>
         </div>
 
         <div className="grid2">
