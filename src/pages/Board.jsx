@@ -30,7 +30,7 @@ export default function Board({ chainData }) {
       <div className="card" style={{ marginTop: 10 }}>
         <div className="title" style={{ fontSize: 22 }}>
           今日前十
-          {dayId ? <span style={{ fontSize: 14, color: 'var(--muted)', marginLeft: 8 }}>Day #{dayId}</span> : null}
+          {dayId ? <span style={{ fontSize: 14, color: 'var(--muted)', marginLeft: 8 }}>第{dayId - 20565}期</span> : null}
         </div>
         <div className="list">
           {top10Loading ? (
@@ -49,7 +49,7 @@ export default function Board({ chainData }) {
                 </div>
                 <div className="right">
                   <div className="row-title">#{r.rank}</div>
-                  <div className="row-sub muted">slisBNB</div>
+                  <div className="row-sub muted">最大DeFi攻击</div>
                 </div>
               </div>
             ))
@@ -70,7 +70,7 @@ export default function Board({ chainData }) {
             history.map((d, idx) => (
               <div key={idx} className="row">
                 <div>
-                  <div className="row-title">Day {d.dayId}</div>
+                  <div className="row-title">第{d.dayId - 20565}期</div>
                   <div className="row-sub muted">冠军 {shortAddr(d.champion)}</div>
                 </div>
                 <div className="right">
