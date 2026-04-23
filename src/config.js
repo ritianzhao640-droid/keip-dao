@@ -20,6 +20,5 @@ export const CONFIG = {
 
 export const ZERO = '0x0000000000000000000000000000000000000000';
 
-// 周期起始：链上 currentDayId 对应的值作为第1期，之后递增
-// 部署时可修改为实际启动日的链上dayId
-export const DAY_START_ID = null; // null=自动取首次加载的链上值
+// 周期起始：链上 dayId 20566 = 第1期（2026-04-23），之后递增
+export const DAY_START_ID = 20566;

@@ -1,7 +1,7 @@
 // 链上数据聚合读取 - 使用真实合约接口（Vault + BurnDistributor + MEYieldVaultLens）
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { CONFIG } from '../config.js';
+import { CONFIG, DAY_START_ID } from '../config.js';
 import { ZERO, getVault, getBurnDist, getVaultLens, getTokenContract, createReadProvider, fmtUnits, fmtNum, formatCountdown, shortAddr } from '../contracts/index.js';
 
 export function useChainData(account) {
@@ -26,11 +26,10 @@ export function useChainData(account) {
   // 日榜总览（当前日）
   const [boardOverview, setBoardOverview] = useState(null);
   const [dayId, setDayId] = useState(null);
-  // 显示用周期号：第1期、第2期...
+  // 显示用周期号：第1期、第2期...（硬编码锚点，所有人一致）
   const getDisplayDayId = () => {
     if (!dayId) return null;
-    const start = parseInt(localStorage.getItem('day_start_id') || dayId);
-    return Math.max(1, Number(dayId) - start + 1);
+    return Math.max(1, dayId - DAY_START_ID + 1);
   };
 
   // 初始化 Provider
@@ -95,12 +94,6 @@ export function useChainData(account) {
       ]);
 
       setDayId(Number(currentDay));
-
-      // 周期初始化：首次加载时记录当前dayId为起点（第1期）
-      const storedStart = localStorage.getItem('day_start_id');
-      if (!storedStart) {
-        localStorage.setItem('day_start_id', Number(currentDay).toString());
-      }
 
       // 组装 dashboard 数据
       const data = {
