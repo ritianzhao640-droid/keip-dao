@@ -2,17 +2,6 @@
 import { CONFIG } from '../config.js';
 import { shortAddr } from '../contracts/index.js';
 
-const CONTRACT_ITEMS = [
-  ['Token', CONFIG.token],
-  ['Vault', CONFIG.vault],
-  ['Burn Distributor', '0xE64EDEC0EE06E41E9E934876ace095B576A0C6d2'],
-  ['Factory', CONFIG.vaultFactory],
-  ['Vault Lens', CONFIG.vaultLens],
-  ['BurnLeaderboardLens', CONFIG.burnLeaderboardLens],
-  ['Implementation', CONFIG.vaultImplementation],
-  ['Multisig', CONFIG.multisigWallet],
-];
-
 const SOCIAL_LINKS = [
   { name: 'Telegram 群', sub: '最新活动、战报与社区讨论', href: '#' },
   { name: 'QQ 群', sub: '中文用户交流与答疑', href: '#' },
@@ -102,25 +91,6 @@ export default function Community() {
           <div>30% 用于营销扩展，20% 进入日榜池，50% 进入永久权重池。</div>
           <div>邀请奖励为代币，不与 slisBNB 奖励混淆。</div>
           <div>项目不再做持币分红，而是把激励聚焦在燃烧成长、排行榜和长期权重体系。</div>
-        </div>
-      </div>
-
-      {/* 合约透明 */}
-      <div className="card" style={{ marginTop: 10 }}>
-        <div className="title" style={{ fontSize: 22 }}>合约透明</div>
-        <div className="contract-grid">
-          {CONTRACT_ITEMS.map(([label, value], i) => (
-            <div key={i} className="contract-item">
-              <div className="k">{label}</div>
-              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{shortAddr(value)}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn-dark pill" onClick={() => copyText(value)}>复制</button>
-                  <button className="btn-light pill" onClick={() => window.open(`${CONFIG.bscScanBase}${value}`, '_blank')}>跳转</button>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </section>
