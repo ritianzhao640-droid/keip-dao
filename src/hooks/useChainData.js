@@ -125,7 +125,7 @@ export function useChainData(account) {
         },
       };
 
-      console.log('[ChainData] Dashboard 数据已组装:', JSON.stringify(data));
+      console.log('[ChainData] Dashboard 数据已组装');
       setDashboard(data);
       setDashboardError(null);
 
