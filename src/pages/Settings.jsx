@@ -13,14 +13,11 @@ import {
   Divider,
   Alert,
   FormControlLabel,
-  Checkbox,
-  Collapse
+  Checkbox
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 const Settings = ({ walletAddress }) => {
   const { 
@@ -45,7 +42,6 @@ const Settings = ({ walletAddress }) => {
     vaultLensAbi: ''
   });
   const [editingId, setEditingId] = useState(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [useDefaultAbi, setUseDefaultAbi] = useState(true);
 
   if (!isAdmin) {
@@ -132,7 +128,6 @@ const Settings = ({ walletAddress }) => {
       vaultLensAbi: ''
     });
     setUseDefaultAbi(true);
-    setShowAdvanced(false);
   };
 
   const startEdit = (config) => {
@@ -148,7 +143,6 @@ const Settings = ({ walletAddress }) => {
     setEditingId(config.id);
     // 根据是否有自定义ABI决定复选框状态
     setUseDefaultAbi(!(config.erc20Abi || config.vaultAbi || config.burnDistAbi || config.vaultLensAbi));
-    setShowAdvanced(true);
   };
 
   const cancelEdit = () => {
@@ -164,8 +158,7 @@ const Settings = ({ walletAddress }) => {
       burnDistAbi: '',
       vaultLensAbi: ''
     });
-    setUseDefaultAbi(true);
-    setShowAdvanced(false);
+      setUseDefaultAbi(true);
   };
 
   return (
@@ -228,90 +221,80 @@ const Settings = ({ walletAddress }) => {
             required
           />
           
-          {/* 高级选项：ABI配置 */}
+          {/* ABI配置 */}
           <Box sx={{ mt: 3, mb: 2 }}>
-            <Button
-              variant="text"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              startIcon={showAdvanced ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              sx={{ mb: 1 }}
-            >
-              高级选项（ABI配置）
-            </Button>
-            <Collapse in={showAdvanced}>
-              <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={useDefaultAbi}
-                      onChange={handleCheckboxChange}
+            <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={useDefaultAbi}
+                    onChange={handleCheckboxChange}
+                  />
+                }
+                label="使用默认ABI（推荐）"
+              />
+              
+              {!useDefaultAbi && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                  <div>
+                    <Typography variant="subtitle2" gutterBottom>
+                      ERC20 ABI（JSON数组）
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      value={form.erc20Abi}
+                      onChange={(e) => handleFormChange('erc20Abi', e.target.value)}
+                      placeholder='例如：[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"type":"function"},...]'
+                      variant="outlined"
                     />
-                  }
-                  label="使用默认ABI（推荐）"
-                />
-                
-                {!useDefaultAbi && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                    <div>
-                      <Typography variant="subtitle2" gutterBottom>
-                        ERC20 ABI（JSON数组）
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={form.erc20Abi}
-                        onChange={(e) => handleFormChange('erc20Abi', e.target.value)}
-                        placeholder='例如：[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"type":"function"},...]'
-                        variant="outlined"
-                      />
-                    </div>
-                    <div>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Vault ABI（JSON数组）
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={form.vaultAbi}
-                        onChange={(e) => handleFormChange('vaultAbi', e.target.value)}
-                        placeholder='Vault合约ABI'
-                        variant="outlined"
-                      />
-                    </div>
-                    <div>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Burn Distributor ABI（JSON数组）
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={form.burnDistAbi}
-                        onChange={(e) => handleFormChange('burnDistAbi', e.target.value)}
-                        placeholder='BurnDistributor合约ABI'
-                        variant="outlined"
-                      />
-                    </div>
-                    <div>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Vault Lens ABI（JSON数组）
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={form.vaultLensAbi}
-                        onChange={(e) => handleFormChange('vaultLensAbi', e.target.value)}
-                        placeholder='VaultLens合约ABI'
-                        variant="outlined"
-                      />
-                    </div>
-                  </Box>
-                )}
-              </Paper>
-            </Collapse>
+                  </div>
+                  <div>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Vault ABI（JSON数组）
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      value={form.vaultAbi}
+                      onChange={(e) => handleFormChange('vaultAbi', e.target.value)}
+                      placeholder='Vault合约ABI'
+                      variant="outlined"
+                    />
+                  </div>
+                  <div>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Burn Distributor ABI（JSON数组）
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      value={form.burnDistAbi}
+                      onChange={(e) => handleFormChange('burnDistAbi', e.target.value)}
+                      placeholder='BurnDistributor合约ABI'
+                      variant="outlined"
+                    />
+                  </div>
+                  <div>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Vault Lens ABI（JSON数组）
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      value={form.vaultLensAbi}
+                      onChange={(e) => handleFormChange('vaultLensAbi', e.target.value)}
+                      placeholder='VaultLens合约ABI'
+                      variant="outlined"
+                    />
+                  </div>
+                </Box>
+              )}
+            </Paper>
           </Box>
           
           <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
