@@ -16,6 +16,25 @@ export const CONFIG = {
     'https://bsc-dataseed.binance.org',
     'https://rpc.ankr.com/bsc',
   ],
+  // 管理员钱包列表（可访问设置页面）
+  adminWallets: [
+    '0x5fffa71f9cac7d23bc8ad1147e01ba73c53d9e41', // multisigWallet
+    '0x0907e1696f7d714d4360d085fe5be03b853d64b5', // 新增管理员
+    // 可添加其他管理员地址
+  ],
+  // 默认代币配置列表（管理员可增删改）
+  defaultTokenConfigs: [
+    {
+      id: 'default',
+      name: '默认代币',
+      tokenAddress: '0x02Eb52f2C54805779aFB5a5aB3D9B2Eb99d47777',
+      vaultAddress: '0x2bA0577ef28F7D7e8093a5be77036c3DFDB4b65D',
+      burnDistributorAddress: '0xE64EDEC0EE06E41E9E934876ace095B576A0C6d2',
+      vaultLensAddress: '0x2a118B737A9DA1f40aDC1190b6723884064E8b58',
+      symbol: '???', // 将从链上读取
+      decimals: 18,
+    },
+  ],
 };
 
 export const ZERO = '0x0000000000000000000000000000000000000000';

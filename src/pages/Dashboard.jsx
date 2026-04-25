@@ -8,14 +8,15 @@ import { showToast } from '../components/Toast.jsx';
 
 export default function Dashboard({ account, signer, chainData, onNavigate }) {
   const [claimingBurn, setClaimingBurn] = useState(false);
-  const { dashboard, dashboardLoading, dashboardError, providerError, dayId, displayDayId } = chainData;
+  const { dashboard, dashboardLoading, dashboardError, providerError, dayId, displayDayId, config } = chainData;
+  const vaultAddress = config?.vaultAddress || CONFIG.vault;
 
   // 领取燃烧奖励
   const handleClaimBurn = useCallback(async () => {
     if (!signer || !account) return;
     setClaimingBurn(true);
     try {
-      const vault = new ethers.Contract(CONFIG.vault, VAULT_ABI, signer);
+      const vault = new ethers.Contract(vaultAddress, VAULT_ABI, signer);
       const tx = await vault.claimBurnReward();
       await tx.wait();
       await chainData.loadAll();
@@ -24,7 +25,7 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
     } finally {
       setClaimingBurn(false);
     }
-  }, [signer, account, chainData]);
+  }, [signer, account, chainData, config]);
 
   // 状态栏
   let statusText = '正在读取链上数据…';

@@ -2,9 +2,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { CONFIG, DAY_START_ID } from '../config.js';
-import { ZERO, getVault, getBurnDist, getVaultLens, getTokenContract, createReadProvider, fmtUnits, fmtNum, formatCountdown, shortAddr } from '../contracts/index.js';
+import { ZERO, getVault, getBurnDist, getVaultLens, getTokenContract, createReadProvider, fmtUnits, fmtNum, formatCountdown, shortAddr, ERC20_ABI, VAULT_ABI, BURN_DIST_ABI, VAULT_LENS_ABI } from '../contracts/index.js';
 
-export function useChainData(account) {
+export function useChainData(account, config = null) {
+  // 合并配置：优先使用传入的 config，否则使用 CONFIG 默认值
+  const effectiveConfig = config || {
+    tokenAddress: CONFIG.token,
+    vaultAddress: CONFIG.vault,
+    burnDistributorAddress: CONFIG.burnDistributor,
+    vaultLensAddress: CONFIG.vaultLens,
+    multisigWallet: CONFIG.multisigWallet,
+  };
   const [provider, setProvider] = useState(null);
   const [providerError, setProviderError] = useState(null);
   const [tokenDecimals, setTokenDecimals] = useState(18);
@@ -48,7 +56,7 @@ export function useChainData(account) {
         console.log('[ChainData] Provider 已连接');
 
         // 读取代币信息
-        const token = getTokenContract(p);
+        const token = new ethers.Contract(effectiveConfig.tokenAddress, ERC20_ABI, p);
         try { setTokenDecimals(Number(await token.decimals())); } catch {}
         try { setTokenSymbol(await token.symbol()); } catch {}
       } catch (e) {
@@ -69,10 +77,10 @@ export function useChainData(account) {
     setMultisigLoading(true);
     setDashboardError(null);
     try {
-      const vault = getVault(provider);
-      const lens = getVaultLens(provider);
-      const dist = getBurnDist(provider);
-      const token = getTokenContract(provider);
+      const vault = new ethers.Contract(effectiveConfig.vaultAddress, VAULT_ABI, provider);
+      const lens = new ethers.Contract(effectiveConfig.vaultLensAddress || CONFIG.vaultLens, VAULT_LENS_ABI, provider);
+      const dist = new ethers.Contract(effectiveConfig.burnDistributorAddress || CONFIG.burnDistributor, BURN_DIST_ABI, provider);
+      const token = new ethers.Contract(effectiveConfig.tokenAddress, ERC20_ABI, provider);
       const userAddr = account || ZERO;
 
       // 并行读取所有数据源
@@ -90,18 +98,18 @@ export function useChainData(account) {
         multisigBalance,
       ] = await Promise.all([
         vault.overview().catch(e => { console.error('overview:', e); return null; }),
-        lens.burnUserDetail(CONFIG.vault, userAddr).catch(e => { console.error('burnUserDetail:', e); return null; }),
+        lens.burnUserDetail(effectiveConfig.vaultAddress, userAddr).catch(e => { console.error('burnUserDetail:', e); return null; }),
         dist.currentDayId().catch(e => { console.error('currentDayId:', e); return 0n }),
         dist.daySummary(await dist.currentDayId()).catch(e => { console.error('daySummary:', e); return null; }),
         dist.dayTop10(await dist.currentDayId()).catch(e => { console.error('dayTop10:', e); return [[], []]; }),
         dist.L1_BPS(),
         dist.L2_BPS(),
         dist.totalActualBurned().catch(e => { console.error('totalActualBurned:', e); return 0n }),
-        lens.burnInviter(CONFIG.vault, userAddr).catch(e => { console.error('burnInviter:', e); return [ZERO, false, 0n]; }),
+        lens.burnInviter(effectiveConfig.vaultAddress, userAddr).catch(e => { console.error('burnInviter:', e); return [ZERO, false, 0n]; }),
         // 用户 slisBNB 持币量
         account ? token.balanceOf(account).catch(() => 0n) : Promise.resolve(0n),
         // 多签钱包 slisBNB 余额
-        token.balanceOf(CONFIG.multisigWallet).catch(() => 0n),
+        token.balanceOf(effectiveConfig.multisigWallet || CONFIG.multisigWallet).catch(() => 0n),
       ]);
 
       setDayId(Number(currentDay));
@@ -187,14 +195,14 @@ export function useChainData(account) {
       setDashboardLoading(false);
       setMultisigLoading(false);
     }
-  }, [provider, account]);
+  }, [provider, account, effectiveConfig]);
 
   /** 加载 Top10（单独刷新） */
   const loadTop10 = useCallback(async () => {
     if (!provider) return;
     setTop10Loading(true);
     try {
-      const dist = getBurnDist(provider);
+      const dist = new ethers.Contract(effectiveConfig.burnDistributorAddress || CONFIG.burnDistributor, BURN_DIST_ABI, provider);
       const cid = await dist.currentDayId();
       const [users, amounts] = await dist.dayTop10(cid);
       const list = users.map((u, i) => ({
@@ -211,14 +219,14 @@ export function useChainData(account) {
     } finally {
       setTop10Loading(false);
     }
-  }, [provider]);
+  }, [provider, effectiveConfig]);
 
   /** 加载历史战报（最近 N 天） */
   const loadHistory = useCallback(async (count = 6) => {
     if (!provider) return;
     setHistoryLoading(true);
     try {
-      const dist = getBurnDist(provider);
+      const dist = new ethers.Contract(effectiveConfig.burnDistributorAddress || CONFIG.burnDistributor, BURN_DIST_ABI, provider);
       const lastDay = await dist.lastProcessedDay();
       const startDay = Number(lastDay) > count ? Number(lastDay) - count + 1 : 1;
       const days = [];
@@ -243,7 +251,7 @@ export function useChainData(account) {
     } finally {
       setHistoryLoading(false);
     }
-  }, [provider]);
+  }, [provider, effectiveConfig]);
 
   /** 燃烧预览（保留接口但不再UI使用） */
   const loadPreview = useCallback(async (_amountInput, _inviterValue) => {}, []);
@@ -275,6 +283,7 @@ export function useChainData(account) {
     boardOverview,
     dayId,
     displayDayId: getDisplayDayId(),
+    config: effectiveConfig,
     preview: null,
     previewLoading: false,
     loadDashboard,

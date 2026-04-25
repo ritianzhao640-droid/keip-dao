@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { CONFIG } from './config.js';
 import { useWallet } from './hooks/useWallet.js';
 import { useChainData } from './hooks/useChainData.js';
+import { useTokenConfig } from './hooks/useTokenConfig.js';
 import { shortAddr, fmtUnits } from './contracts/index.js';
 import BottomNav from './components/BottomNav.jsx';
 import { ToastProvider } from './components/Toast.jsx';
@@ -14,6 +15,7 @@ import Burn from './pages/Burn.jsx';
 import Board from './pages/Board.jsx';
 import Invite from './pages/Invite.jsx';
 import Community from './pages/Community.jsx';
+import Settings from './pages/Settings.jsx';
 
 const PAGES = {
   home: Dashboard,
@@ -21,12 +23,15 @@ const PAGES = {
   board: Board,
   invite: Invite,
   community: Community,
+  settings: Settings,
 };
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const wallet = useWallet();
-  const chainData = useChainData(wallet.account);
+  const { activeConfig } = useTokenConfig();
+  const chainData = useChainData(wallet.account, activeConfig);
+  const isAdmin = wallet.account && CONFIG.adminWallets.includes(wallet.account.toLowerCase());
 
   // 导航（支持自定义事件跨组件调用）
   const handleNavigate = useCallback((tab) => {
@@ -103,7 +108,7 @@ export default function App() {
       </div>
 
       {/* Tab 导航 */}
-      <BottomNav activeTab={activeTab} onNavigate={handleNavigate} />
+      <BottomNav activeTab={activeTab} onNavigate={handleNavigate} isAdmin={isAdmin} />
 
       {/* 当前页面 */}
       <ActivePage

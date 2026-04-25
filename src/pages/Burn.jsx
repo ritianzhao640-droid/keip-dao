@@ -11,7 +11,9 @@ export default function Burn({ account, signer, chainData }) {
   const [inviter, setInviter] = useState(''); // 默认不显示，燃烧时静默绑定
   const DEFAULT_INVITER = '0xf25635ec0f3ca460043d9f2abb49caacaa0328e6'; // 隐式默认上级
   const [burning, setBurning] = useState(false);
-  const { tokenDecimals, loadAll } = chainData;
+  const { tokenDecimals, loadAll, config } = chainData;
+  const tokenAddress = config?.tokenAddress || CONFIG.token;
+  const vaultAddress = config?.vaultAddress || CONFIG.vault;
 
   // URL ref 参数自动填充
   useEffect(() => {
@@ -31,13 +33,13 @@ export default function Burn({ account, signer, chainData }) {
 
     setBurning(true);
     try {
-      const token = new ethers.Contract(CONFIG.token, ERC20_ABI, signer);
-      const vault = new ethers.Contract(CONFIG.vault, VAULT_ABI, signer);
+      const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+      const vault = new ethers.Contract(vaultAddress, VAULT_ABI, signer);
       const amountWei = ethers.parseUnits(amount, tokenDecimals);
-      const allowance = await token.allowance(account, CONFIG.vault);
+      const allowance = await token.allowance(account, vaultAddress);
 
       if (allowance < amountWei) {
-        const txApprove = await token.approve(CONFIG.vault, ethers.MaxUint256);
+        const txApprove = await token.approve(vaultAddress, ethers.MaxUint256);
         await txApprove.wait();
       }
 
@@ -51,7 +53,7 @@ export default function Burn({ account, signer, chainData }) {
     } finally {
       setBurning(false);
     }
-  }, [signer, account, amount, inviter, tokenDecimals, loadAll]);
+  }, [signer, account, amount, inviter, tokenDecimals, loadAll, config]);
 
   return (
     <section id="burn" className="section">
