@@ -1,32 +1,48 @@
-// 管理员钱包列表
-const adminWallets = [
-  '0x1234567890123456789012345678901234567890',
-  '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-  '0x0907e1696f7d714d4360d085fe5be03b853d64b5'
-];
-
-// 默认代币配置（支持自定义ABI）
-const defaultTokenConfigs = [
-  {
-    id: 'slisbnb',
-    name: 'slisBNB',
-    tokenAddress: '0x...',
-    vaultAddress: '0x...',
-    distributorAddress: '0x...',
-    vaultLensAddress: '0x...',
-    // 可选的自定义ABI字段（JSON字符串格式）
-    erc20Abi: null,
-    vaultAbi: null,
-    burnDistAbi: null,
-    vaultLensAbi: null
-  }
-];
-
+// 合约地址与链上配置（BSC mainnet）
 export const CONFIG = {
-  adminWallets,
-  defaultTokenConfigs,
-  // 其他原有配置
-  rpcUrl: 'https://bsc-dataseed.binance.org/',
   chainId: 56,
-  // ... 其他配置
+  token: '0x02Eb52f2C54805779aFB5a5aB3D9B2Eb99d47777',
+  vault: '0x2bA0577ef28F7D7e8093a5be77036c3DFDB4b65D',
+  vaultImplementation: '0xC1C9B8d1cEDB967a0FB5C9fb34e2864EddcD6F3A',
+  vaultDeployer: '0xdbfea3062A51d5A8B99872318EA4A87fbDF582fe',
+  vaultFactory: '0x5a4cd78283095CA7B79Ba6EF49BE9df4D8379364',
+  vaultLens: '0x2a118B737A9DA1f40aDC1190b6723884064E8b58',
+  burnLeaderboardLens: '0xccb816433b58349d4eD9040B3DF9c55927a325A2',
+  burnDistributor: '0xE64EDEC0EE06E41E9E934876ace095B576A0C6d2',
+  multisigWallet: '0x5fffa71f9cac7d23bc8ad1147e01ba73c53d9e41',
+  bscScanBase: 'https://bscscan.com/address/',
+  rpcUrls: [
+    'https://bsc-rpc.publicnode.com',
+    'https://bsc-dataseed.binance.org',
+    'https://rpc.ankr.com/bsc',
+  ],
+  // 管理员钱包列表（可访问设置页面）
+  adminWallets: [
+    '0x5fffa71f9cac7d23bc8ad1147e01ba73c53d9e41', // multisigWallet
+    '0x0907e1696f7d714d4360d085fe5be03b853d64b5', // 新增管理员
+    // 可添加其他管理员地址
+  ],
+  // 默认代币配置列表（管理员可增删改）
+  defaultTokenConfigs: [
+    {
+      id: 'default',
+      name: '默认代币',
+      tokenAddress: '0x02Eb52f2C54805779aFB5a5aB3D9B2Eb99d47777',
+      vaultAddress: '0x2bA0577ef28F7D7e8093a5be77036c3DFDB4b65D',
+      burnDistributorAddress: '0xE64EDEC0EE06E41E9E934876ace095B576A0C6d2',
+      vaultLensAddress: '0x2a118B737A9DA1f40aDC1190b6723884064E8b58',
+      symbol: '???', // 将从链上读取
+      decimals: 18,
+      // 可选的自定义ABI字段（JSON数组格式）
+      erc20Abi: null,
+      vaultAbi: null,
+      burnDistAbi: null,
+      vaultLensAbi: null,
+    },
+  ],
 };
+
+export const ZERO = '0x0000000000000000000000000000000000000000';
+
+// 周期起始：链上 dayId 20566 = 第1期（2026-04-23），之后递增
+export const DAY_START_ID = 20566;

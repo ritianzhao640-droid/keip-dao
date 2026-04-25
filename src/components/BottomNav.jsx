@@ -1,51 +1,25 @@
-import React from 'react';
-import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LeaderboardIcon from '@mui/icons-material/Leaderboard';
-import WhatshotIcon from '@mui/icons-material/Whatshot';
-import SettingsIcon from '@mui/icons-material/Settings';
-import { useNavigate, useLocation } from 'react-router-dom';
-
-const BottomNav = ({ isAdmin }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const navItems = [
-    { id: 'dashboard', label: '仪表盘', icon: <DashboardIcon />, path: '/' },
-    { id: 'board', label: '排行榜', icon: <LeaderboardIcon />, path: '/board' },
-    { id: 'burn', label: '燃烧', icon: <WhatshotIcon />, path: '/burn' },
+// 底部导航 - 5 tab（首页/燃烧/日榜/邀请/社区），管理员额外显示设置tab
+export default function BottomNav({ activeTab, onNavigate, isAdmin = false }) {
+  const tabs = [
+    { id: 'home', label: '首页' },
+    { id: 'burn', label: '燃烧' },
+    { id: 'board', label: '日榜' },
+    { id: 'invite', label: '邀请' },
+    { id: 'community', label: '社区' },
+    ...(isAdmin ? [{ id: 'settings', label: '设置' }] : []),
   ];
 
-  // 如果是管理员，添加设置项
-  if (isAdmin) {
-    navItems.push({ id: 'settings', label: '设置', icon: <SettingsIcon />, path: '/settings' });
-  }
-
-  const currentValue = navItems.find(item => item.path === location.pathname)?.id || 'dashboard';
-
   return (
-    <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }} elevation={3}>
-      <BottomNavigation
-        value={currentValue}
-        onChange={(event, newValue) => {
-          const item = navItems.find(item => item.id === newValue);
-          if (item) {
-            navigate(item.path);
-          }
-        }}
-        showLabels
-      >
-        {navItems.map((item) => (
-          <BottomNavigationAction
-            key={item.id}
-            label={item.label}
-            icon={item.icon}
-            value={item.id}
-          />
-        ))}
-      </BottomNavigation>
-    </Paper>
+    <div className="tabs">
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          className={`tab ${activeTab === t.id ? 'active' : ''}`}
+          onClick={() => onNavigate(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
   );
-};
-
-export default BottomNav;
+}
