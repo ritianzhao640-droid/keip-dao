@@ -1,384 +1,511 @@
-import React, { useState } from 'react';
-import { useTokenConfig } from '../hooks/useTokenConfig';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  IconButton,
-  Typography,
-  Paper,
-  Divider,
-  Alert,
-  FormControlLabel,
-  Checkbox
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckIcon from '@mui/icons-material/Check';
+// 设置页面 - 仅管理员可访问
+import { useState, useEffect, useCallback } from 'react';
+import { ethers } from 'ethers';
+import { CONFIG } from '../config.js';
+import { ERC20_ABI } from '../contracts/index.js';
+import { showToast } from '../components/Toast.jsx';
 
-const Settings = ({ walletAddress }) => {
-  const { 
-    configs, 
-    activeConfig, 
-    addConfig, 
-    updateConfig, 
-    deleteConfig, 
-    setActive,
-    isAdmin 
-  } = useTokenConfig(walletAddress);
+// localStorage 键名
+const STORAGE_KEY = 'keip_token_configs';
+const ACTIVE_TOKEN_KEY = 'keip_active_token_id';
 
-  const [form, setForm] = useState({
+export default function Settings({ account, signer, chainData, onNavigate }) {
+  const [tokenConfigs, setTokenConfigs] = useState([]);
+  const [activeTokenId, setActiveTokenId] = useState('');
+  const [editingId, setEditingId] = useState(null); // 正在编辑的配置ID，null表示新增
+  const [formData, setFormData] = useState({
+    id: '',
     name: '',
     tokenAddress: '',
     vaultAddress: '',
-    distributorAddress: '',
+    burnDistributorAddress: '',
     vaultLensAddress: '',
+    symbol: '',
+    decimals: 18,
     erc20Abi: '',
     vaultAbi: '',
     burnDistAbi: '',
-    vaultLensAbi: ''
+    vaultLensAbi: '',
   });
-  const [editingId, setEditingId] = useState(null);
   const [useDefaultAbi, setUseDefaultAbi] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  if (!isAdmin) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="warning">
-          只有管理员钱包可以访问设置页面。
-        </Alert>
-      </Box>
-    );
-  }
+  // 检查当前钱包是否为管理员
+  const isAdmin = account && CONFIG.adminWallets.includes(account.toLowerCase());
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  // 从 localStorage 加载配置
+  useEffect(() => {
+    if (!isAdmin) return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const savedActive = localStorage.getItem(ACTIVE_TOKEN_KEY);
+      const configs = saved ? JSON.parse(saved) : CONFIG.defaultTokenConfigs;
+      setTokenConfigs(configs);
+      const active = savedActive || (configs.length > 0 ? configs[0].id : '');
+      setActiveTokenId(active);
+    } catch (e) {
+      console.error('加载配置失败:', e);
+      setTokenConfigs(CONFIG.defaultTokenConfigs);
+    }
+  }, [isAdmin]);
 
-  const handleCheckboxChange = (e) => {
-    setUseDefaultAbi(e.target.checked);
-  };
+  // 保存配置到 localStorage
+  const saveConfigs = useCallback((configs, activeId) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(configs));
+    if (activeId) localStorage.setItem(ACTIVE_TOKEN_KEY, activeId);
+  }, []);
 
+  // 表单字段更新
   const handleFormChange = (field, value) => {
-    setForm({ ...form, [field]: value });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // 从链上获取代币符号和小数位
+  const fetchTokenInfo = useCallback(async (tokenAddress) => {
+    if (!tokenAddress || !ethers.isAddress(tokenAddress)) return;
+    try {
+      const provider = chainData.provider || new ethers.JsonRpcProvider(CONFIG.rpcUrls[0]);
+      const token = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+      const [symbol, decimals] = await Promise.all([
+        token.symbol(),
+        token.decimals(),
+      ]);
+      setFormData(prev => ({ ...prev, symbol, decimals }));
+      showToast(`已读取代币信息: ${symbol} (${decimals} 位小数)`, 'success');
+    } catch (e) {
+      console.warn('无法读取代币信息:', e);
+      showToast('无法读取代币信息，请手动填写', 'warning');
+    }
+  }, [chainData.provider]);
+
+  // 自动填充代币信息
+  useEffect(() => {
+    if (formData.tokenAddress && ethers.isAddress(formData.tokenAddress)) {
+      const debounce = setTimeout(() => fetchTokenInfo(formData.tokenAddress), 500);
+      return () => clearTimeout(debounce);
+    }
+  }, [formData.tokenAddress, fetchTokenInfo]);
+
+  // 保存配置（新增或编辑）
+  const handleSaveConfig = useCallback(() => {
+    const { id, name, tokenAddress, vaultAddress, burnDistributorAddress, vaultLensAddress, symbol, decimals, erc20Abi, vaultAbi, burnDistAbi, vaultLensAbi } = formData;
+    if (!id.trim() || !name.trim() || !ethers.isAddress(tokenAddress) || !ethers.isAddress(vaultAddress)) {
+      showToast('请填写必要字段且地址格式正确', 'error');
+      return;
+    }
+
+    // 处理ABI：如果使用默认ABI，则设置为null；否则尝试解析JSON
+    let erc20AbiParsed = null;
+    let vaultAbiParsed = null;
+    let burnDistAbiParsed = null;
+    let vaultLensAbiParsed = null;
     
-    // 准备要保存的配置对象
-    const configToSave = { ...form };
-    
-    // 处理ABI字段
-    if (useDefaultAbi) {
-      // 使用默认ABI，将ABI字段设为null
-      configToSave.erc20Abi = null;
-      configToSave.vaultAbi = null;
-      configToSave.burnDistAbi = null;
-      configToSave.vaultLensAbi = null;
-    } else {
-      // 尝试解析自定义ABI JSON
+    if (!useDefaultAbi) {
       try {
-        if (configToSave.erc20Abi.trim()) {
-          JSON.parse(configToSave.erc20Abi);
-        } else {
-          configToSave.erc20Abi = null;
-        }
-        if (configToSave.vaultAbi.trim()) {
-          JSON.parse(configToSave.vaultAbi);
-        } else {
-          configToSave.vaultAbi = null;
-        }
-        if (configToSave.burnDistAbi.trim()) {
-          JSON.parse(configToSave.burnDistAbi);
-        } else {
-          configToSave.burnDistAbi = null;
-        }
-        if (configToSave.vaultLensAbi.trim()) {
-          JSON.parse(configToSave.vaultLensAbi);
-        } else {
-          configToSave.vaultLensAbi = null;
-        }
-      } catch (error) {
-        alert(`ABI JSON格式错误: ${error.message}`);
+        if (erc20Abi.trim()) erc20AbiParsed = JSON.parse(erc20Abi);
+        if (vaultAbi.trim()) vaultAbiParsed = JSON.parse(vaultAbi);
+        if (burnDistAbi.trim()) burnDistAbiParsed = JSON.parse(burnDistAbi);
+        if (vaultLensAbi.trim()) vaultLensAbiParsed = JSON.parse(vaultLensAbi);
+      } catch (e) {
+        showToast(`ABI JSON 解析失败: ${e.message}`, 'error');
         return;
       }
     }
-    
-    if (editingId) {
-      updateConfig(editingId, configToSave);
-      setEditingId(null);
+
+    const newConfigs = [...tokenConfigs];
+    const existingIndex = newConfigs.findIndex(c => c.id === id);
+    const config = {
+      id,
+      name,
+      tokenAddress,
+      vaultAddress,
+      burnDistributorAddress: burnDistributorAddress || CONFIG.burnDistributor,
+      vaultLensAddress: vaultLensAddress || CONFIG.vaultLens,
+      symbol,
+      decimals,
+      erc20Abi: erc20AbiParsed,
+      vaultAbi: vaultAbiParsed,
+      burnDistAbi: burnDistAbiParsed,
+      vaultLensAbi: vaultLensAbiParsed,
+    };
+
+    if (existingIndex >= 0) {
+      newConfigs[existingIndex] = config;
+      showToast(`配置 "${name}" 已更新`, 'success');
     } else {
-      addConfig(configToSave);
+      newConfigs.push(config);
+      showToast(`配置 "${name}" 已添加`, 'success');
     }
-    
-    // 重置表单
-    setForm({
+
+    setTokenConfigs(newConfigs);
+    saveConfigs(newConfigs, activeTokenId);
+    setFormData({
+      id: '',
       name: '',
       tokenAddress: '',
       vaultAddress: '',
-      distributorAddress: '',
+      burnDistributorAddress: '',
       vaultLensAddress: '',
+      symbol: '',
+      decimals: 18,
       erc20Abi: '',
       vaultAbi: '',
       burnDistAbi: '',
-      vaultLensAbi: ''
+      vaultLensAbi: '',
     });
     setUseDefaultAbi(true);
-  };
-
-  const startEdit = (config) => {
-    // 将配置中的ABI字段转换为字符串（如果是数组）或空字符串
-    const formData = {
-      ...config,
-      erc20Abi: config.erc20Abi ? (Array.isArray(config.erc20Abi) ? JSON.stringify(config.erc20Abi, null, 2) : config.erc20Abi) : '',
-      vaultAbi: config.vaultAbi ? (Array.isArray(config.vaultAbi) ? JSON.stringify(config.vaultAbi, null, 2) : config.vaultAbi) : '',
-      burnDistAbi: config.burnDistAbi ? (Array.isArray(config.burnDistAbi) ? JSON.stringify(config.burnDistAbi, null, 2) : config.burnDistAbi) : '',
-      vaultLensAbi: config.vaultLensAbi ? (Array.isArray(config.vaultLensAbi) ? JSON.stringify(config.vaultLensAbi, null, 2) : config.vaultLensAbi) : ''
-    };
-    setForm(formData);
-    setEditingId(config.id);
-    // 根据是否有自定义ABI决定复选框状态
-    setUseDefaultAbi(!(config.erc20Abi || config.vaultAbi || config.burnDistAbi || config.vaultLensAbi));
-  };
-
-  const cancelEdit = () => {
     setEditingId(null);
-    setForm({
-      name: '',
-      tokenAddress: '',
-      vaultAddress: '',
-      distributorAddress: '',
-      vaultLensAddress: '',
-      erc20Abi: '',
-      vaultAbi: '',
-      burnDistAbi: '',
-      vaultLensAbi: ''
-    });
-      setUseDefaultAbi(true);
+  }, [formData, tokenConfigs, activeTokenId, saveConfigs, useDefaultAbi]);
+
+  // 编辑配置
+  const handleEdit = (config) => {
+    // 确保ABI字段存在（向后兼容）
+    const configWithAbi = {
+      ...config,
+      erc20Abi: config.erc20Abi || '',
+      vaultAbi: config.vaultAbi || '',
+      burnDistAbi: config.burnDistAbi || '',
+      vaultLensAbi: config.vaultLensAbi || '',
+    };
+    // 如果ABI字段是数组，转换为JSON字符串；否则保持原样（可能是空字符串）
+    const formattedConfig = {
+      ...configWithAbi,
+      erc20Abi: Array.isArray(configWithAbi.erc20Abi) ? JSON.stringify(configWithAbi.erc20Abi, null, 2) : configWithAbi.erc20Abi,
+      vaultAbi: Array.isArray(configWithAbi.vaultAbi) ? JSON.stringify(configWithAbi.vaultAbi, null, 2) : configWithAbi.vaultAbi,
+      burnDistAbi: Array.isArray(configWithAbi.burnDistAbi) ? JSON.stringify(configWithAbi.burnDistAbi, null, 2) : configWithAbi.burnDistAbi,
+      vaultLensAbi: Array.isArray(configWithAbi.vaultLensAbi) ? JSON.stringify(configWithAbi.vaultLensAbi, null, 2) : configWithAbi.vaultLensAbi,
+    };
+    setFormData(formattedConfig);
+    setEditingId(config.id);
+    // 判断是否使用默认ABI：如果所有ABI字段都为空或null，则使用默认
+    const hasCustomAbi = config.erc20Abi || config.vaultAbi || config.burnDistAbi || config.vaultLensAbi;
+    setUseDefaultAbi(!hasCustomAbi);
   };
+
+  // 删除配置
+  const handleDelete = (id) => {
+    if (tokenConfigs.length <= 1) {
+      showToast('至少保留一个代币配置', 'error');
+      return;
+    }
+    const newConfigs = tokenConfigs.filter(c => c.id !== id);
+    setTokenConfigs(newConfigs);
+    saveConfigs(newConfigs, activeTokenId === id ? (newConfigs.length > 0 ? newConfigs[0].id : '') : activeTokenId);
+    if (activeTokenId === id) setActiveTokenId(newConfigs.length > 0 ? newConfigs[0].id : '');
+    showToast('配置已删除', 'success');
+  };
+
+  // 设置激活代币
+  const handleSetActive = (id) => {
+    setActiveTokenId(id);
+    saveConfigs(tokenConfigs, id);
+    showToast(`已切换至 "${tokenConfigs.find(c => c.id === id)?.name}"`, 'success');
+  };
+
+  // 应用当前激活配置到全局 CONFIG（临时，仅本次会话）
+  const handleApplyToSession = useCallback(() => {
+    const active = tokenConfigs.find(c => c.id === activeTokenId);
+    if (!active) return;
+    // 这里可以更新全局状态或通过事件通知其他组件
+    // 目前先展示提示
+    showToast(`已应用 "${active.name}" 配置（仅本次会话生效）`, 'success');
+    // 可以触发自定义事件，让其他组件重新加载数据
+    window.dispatchEvent(new CustomEvent('tokenConfigChanged', { detail: active }));
+  }, [tokenConfigs, activeTokenId]);
+
+  if (!isAdmin) {
+    return (
+      <section id="settings" className="section">
+        <h2 className="title">设置</h2>
+        <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>仅管理员可访问</div>
+          <div style={{ marginTop: 8, color: '#888' }}>当前钱包地址：{account ? account.slice(0, 8) + '...' : '未连接'}</div>
+          <div style={{ marginTop: 16, fontSize: 14 }}>如需访问，请将你的地址添加到 config.js 的 adminWallets 列表中。</div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 800, margin: '0 auto' }}>
-      <Typography variant="h4" gutterBottom>
-        代币配置管理
-      </Typography>
-      <Typography variant="body1" color="text.secondary" gutterBottom>
-        添加或编辑代币配置，发布新代币时可重复使用此 DApp。
-      </Typography>
+    <section id="settings" className="section">
+      <h2 className="title">代币配置管理</h2>
+      <div className="card">
+        <div style={{ fontSize: 14, color: '#666', marginBottom: 16 }}>
+          此页面允许管理员添加、编辑和切换不同的代币配置。配置将保存在浏览器本地存储中。
+        </div>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {editingId ? '编辑配置' : '添加新配置'}
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label="代币名称"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="代币合约地址"
-            name="tokenAddress"
-            value={form.tokenAddress}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Vault 合约地址"
-            name="vaultAddress"
-            value={form.vaultAddress}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Distributor 合约地址"
-            name="distributorAddress"
-            value={form.distributorAddress}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Vault Lens 合约地址"
-            name="vaultLensAddress"
-            value={form.vaultLensAddress}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
-          
-          {/* ABI配置 */}
-          <Box sx={{ mt: 3, mb: 2 }}>
-            <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={useDefaultAbi}
-                    onChange={handleCheckboxChange}
-                  />
-                }
-                label="使用默认ABI（推荐）"
-              />
-              
-              {!useDefaultAbi && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                  <div>
-                    <Typography variant="subtitle2" gutterBottom>
-                      ERC20 ABI（JSON数组）
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      value={form.erc20Abi}
-                      onChange={(e) => handleFormChange('erc20Abi', e.target.value)}
-                      placeholder='例如：[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"type":"function"},...]'
-                      variant="outlined"
-                    />
-                  </div>
-                  <div>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Vault ABI（JSON数组）
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      value={form.vaultAbi}
-                      onChange={(e) => handleFormChange('vaultAbi', e.target.value)}
-                      placeholder='Vault合约ABI'
-                      variant="outlined"
-                    />
-                  </div>
-                  <div>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Burn Distributor ABI（JSON数组）
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      value={form.burnDistAbi}
-                      onChange={(e) => handleFormChange('burnDistAbi', e.target.value)}
-                      placeholder='BurnDistributor合约ABI'
-                      variant="outlined"
-                    />
-                  </div>
-                  <div>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Vault Lens ABI（JSON数组）
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      value={form.vaultLensAbi}
-                      onChange={(e) => handleFormChange('vaultLensAbi', e.target.value)}
-                      placeholder='VaultLens合约ABI'
-                      variant="outlined"
-                    />
-                  </div>
-                </Box>
-              )}
-            </Paper>
-          </Box>
-          
-          <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-            <Button type="submit" variant="contained" color="primary">
-              {editingId ? '更新' : '添加'}
-            </Button>
-            {editingId && (
-              <Button variant="outlined" onClick={cancelEdit}>
-                取消
-              </Button>
-            )}
-          </Box>
-        </form>
-      </Paper>
-
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          已保存的配置 ({configs.length})
-        </Typography>
-        {configs.length === 0 ? (
-          <Typography color="text.secondary">暂无配置</Typography>
-        ) : (
-          <List>
-            {configs.map((config) => (
-              <React.Fragment key={config.id}>
-                <ListItem
-                  secondaryAction={
-                    <Box>
-                      <IconButton 
-                        edge="end" 
-                        aria-label="edit"
-                        onClick={() => startEdit(config)}
-                        sx={{ mr: 1 }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton 
-                        edge="end" 
-                        aria-label="delete"
-                        onClick={() => deleteConfig(config.id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  }
-                >
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body1">{config.name}</Typography>
-                        {activeConfig?.id === config.id && (
-                          <CheckIcon color="primary" fontSize="small" />
-                        )}
-                        {activeConfig?.id === config.id && (
-                          <Typography variant="caption" color="primary">
-                            (当前使用)
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                    secondary={
-                      <Box sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-                        <div>代币: {config.tokenAddress?.slice(0, 10)}...</div>
-                        <div>Vault: {config.vaultAddress?.slice(0, 10)}...</div>
-                      </Box>
-                    }
-                  />
-                  <Button
-                    size="small"
-                    variant={activeConfig?.id === config.id ? "contained" : "outlined"}
-                    onClick={() => setActive(config.id)}
-                    disabled={activeConfig?.id === config.id}
-                  >
-                    {activeConfig?.id === config.id ? '已激活' : '设为当前'}
-                  </Button>
-                </ListItem>
-                <Divider />
-              </React.Fragment>
-            ))}
-          </List>
+        {/* 当前激活配置 */}
+        {activeTokenId && (
+          <div style={{ marginBottom: 24, padding: 16, background: 'var(--soft)', borderRadius: 12 }}>
+            <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>当前激活配置</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 600 }}>
+                  {tokenConfigs.find(c => c.id === activeTokenId)?.name || '未知'}
+                </div>
+                <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>
+                  代币: {tokenConfigs.find(c => c.id === activeTokenId)?.tokenAddress?.slice(0, 10)}...
+                </div>
+              </div>
+              <button
+                className="btn-dark"
+                onClick={handleApplyToSession}
+                style={{ fontSize: 14, padding: '8px 16px' }}
+              >
+                应用配置
+              </button>
+            </div>
+          </div>
         )}
-      </Paper>
-    </Box>
-  );
-};
 
-export default Settings;
+        {/* 配置表单 */}
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: 16, marginBottom: 12 }}>{editingId ? '编辑配置' : '新增配置'}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>配置ID（英文唯一标识）</label>
+              <input
+                type="text"
+                value={formData.id}
+                onChange={(e) => handleFormChange('id', e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+                disabled={!!editingId}
+                placeholder="如：default、token2"
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>显示名称</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleFormChange('name', e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+                placeholder="如：默认代币"
+              />
+            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>代币合约地址</label>
+            <input
+              type="text"
+              value={formData.tokenAddress}
+              onChange={(e) => handleFormChange('tokenAddress', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+              placeholder="0x..."
+            />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Vault 合约地址</label>
+            <input
+              type="text"
+              value={formData.vaultAddress}
+              onChange={(e) => handleFormChange('vaultAddress', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+              placeholder="0x..."
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+            <div>
+              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>BurnDistributor 地址（可选）</label>
+              <input
+                type="text"
+                value={formData.burnDistributorAddress}
+                onChange={(e) => handleFormChange('burnDistributorAddress', e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+                placeholder="留空使用默认"
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>VaultLens 地址（可选）</label>
+              <input
+                type="text"
+                value={formData.vaultLensAddress}
+                onChange={(e) => handleFormChange('vaultLensAddress', e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+                placeholder="留空使用默认"
+              />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+            <div>
+              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>代币符号</label>
+              <input
+                type="text"
+                value={formData.symbol}
+                onChange={(e) => handleFormChange('symbol', e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+                placeholder="如：ABC"
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>小数位数</label>
+              <input
+                type="number"
+                value={formData.decimals}
+                onChange={(e) => handleFormChange('decimals', parseInt(e.target.value) || 18)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333' }}
+                min="0"
+                max="36"
+              />
+            </div>
+          </div>
+
+          {/* 合约ABI配置 */}
+          <div style={{ marginTop: 16, padding: 16, border: '1px solid #333', borderRadius: 8 }}>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={useDefaultAbi}
+                  onChange={(e) => setUseDefaultAbi(e.target.checked)}
+                />
+                使用默认ABI（推荐）
+              </label>
+              <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                若取消勾选，可分别为每个合约自定义ABI（需粘贴JSON数组）
+              </div>
+            </div>
+
+            {!useDefaultAbi && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>ERC20 ABI（JSON数组）</label>
+                  <textarea
+                    value={formData.erc20Abi}
+                    onChange={(e) => handleFormChange('erc20Abi', e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333', fontFamily: 'monospace', fontSize: 12, minHeight: 80 }}
+                    placeholder='[ "function balanceOf(address) view returns (uint256)", ... ]'
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Vault ABI（JSON数组）</label>
+                  <textarea
+                    value={formData.vaultAbi}
+                    onChange={(e) => handleFormChange('vaultAbi', e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333', fontFamily: 'monospace', fontSize: 12, minHeight: 80 }}
+                    placeholder='[ "function burn(uint256 amount, address inviter)", ... ]'
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>BurnDistributor ABI（JSON数组）</label>
+                  <textarea
+                    value={formData.burnDistAbi}
+                    onChange={(e) => handleFormChange('burnDistAbi', e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333', fontFamily: 'monospace', fontSize: 12, minHeight: 80 }}
+                    placeholder='[ "function currentDayId() view returns (uint256)", ... ]'
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>VaultLens ABI（JSON数组）</label>
+                  <textarea
+                    value={formData.vaultLensAbi}
+                    onChange={(e) => handleFormChange('vaultLensAbi', e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #333', fontFamily: 'monospace', fontSize: 12, minHeight: 80 }}
+                    placeholder='[ "function burnUserDetail(address vault, address user) view returns (...)", ... ]'
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+            <button
+              className="btn-dark"
+              onClick={handleSaveConfig}
+              style={{ padding: '10px 20px', fontSize: 14 }}
+            >
+              {editingId ? '更新配置' : '添加配置'}
+            </button>
+            {editingId && (
+              <button
+                className="btn-dark"
+                onClick={() => {
+                  setFormData({
+                    id: '',
+                    name: '',
+                    tokenAddress: '',
+                    vaultAddress: '',
+                    burnDistributorAddress: '',
+                    vaultLensAddress: '',
+                    symbol: '',
+                    decimals: 18,
+                    erc20Abi: '',
+                    vaultAbi: '',
+                    burnDistAbi: '',
+                    vaultLensAbi: '',
+                  });
+                  setUseDefaultAbi(true);
+                  setEditingId(null);
+                }}
+                style={{ padding: '10px 20px', fontSize: 14, background: '#444' }}
+              >
+                取消编辑
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 配置列表 */}
+        <div>
+          <h3 style={{ fontSize: 16, marginBottom: 12 }}>现有配置</h3>
+          {tokenConfigs.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 20, color: '#888' }}>暂无配置，请添加第一个。</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {tokenConfigs.map(config => (
+                <div
+                  key={config.id}
+                  style={{
+                    padding: 16,
+                    border: '1px solid #333',
+                    borderRadius: 12,
+                    background: activeTokenId === config.id ? 'rgba(0, 100, 255, 0.1)' : 'transparent',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 600 }}>
+                        {config.name} <span style={{ fontSize: 13, color: '#aaa' }}>({config.id})</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
+                        代币: {config.tokenAddress.slice(0, 10)}... | 符号: {config.symbol || '未知'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {activeTokenId !== config.id && (
+                        <button
+                          className="btn-dark"
+                          onClick={() => handleSetActive(config.id)}
+                          style={{ fontSize: 12, padding: '6px 12px' }}
+                        >
+                          激活
+                        </button>
+                      )}
+                      <button
+                        className="btn-dark"
+                        onClick={() => handleEdit(config)}
+                        style={{ fontSize: 12, padding: '6px 12px', background: '#444' }}
+                      >
+                        编辑
+                      </button>
+                      {tokenConfigs.length > 1 && (
+                        <button
+                          className="btn-dark"
+                          onClick={() => handleDelete(config.id)}
+                          style={{ fontSize: 12, padding: '6px 12px', background: '#a00' }}
+                        >
+                          删除
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
