@@ -8,7 +8,7 @@ import { showToast } from '../components/Toast.jsx';
 
 export default function Invite({ account, signer, chainData }) {
   const [claiming, setClaiming] = useState(false);
-  const { dashboard, tokenDecimals } = chainData;
+  const { dashboard, tokenDecimals, config } = chainData;
   const me = dashboard?.me;
 
   // 复制（带反馈，支持降级方案）
@@ -63,7 +63,9 @@ export default function Invite({ account, signer, chainData }) {
     if (!signer || !account) return;
     setClaiming(true);
     try {
-      const vault = new ethers.Contract(CONFIG.vault, VAULT_ABI, signer);
+      const vaultAddress = config?.vaultAddress || CONFIG.vault;
+      const vaultAbi = config?.vaultAbi || VAULT_ABI;
+      const vault = new ethers.Contract(vaultAddress, vaultAbi, signer);
       const tx = await vault.claimInviteReward();
       await tx.wait();
       await chainData.loadAll();

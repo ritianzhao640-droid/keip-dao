@@ -33,8 +33,10 @@ export default function Burn({ account, signer, chainData }) {
 
     setBurning(true);
     try {
-      const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      const vault = new ethers.Contract(vaultAddress, VAULT_ABI, signer);
+      const tokenAbi = config?.erc20Abi || ERC20_ABI;
+      const vaultAbi = config?.vaultAbi || VAULT_ABI;
+      const token = new ethers.Contract(tokenAddress, tokenAbi, signer);
+      const vault = new ethers.Contract(vaultAddress, vaultAbi, signer);
       const amountWei = ethers.parseUnits(amount, tokenDecimals);
       const allowance = await token.allowance(account, vaultAddress);
 

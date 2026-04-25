@@ -55,7 +55,7 @@ export function useChainData(account, config = null) {
         setProviderError(null);
         console.log('[ChainData] Provider 已连接');
 
-        // 读取代币信息（支持动态ABI）
+        // 读取代币信息
         const tokenAbi = effectiveConfig.erc20Abi || ERC20_ABI;
         const token = new ethers.Contract(effectiveConfig.tokenAddress, tokenAbi, p);
         try { setTokenDecimals(Number(await token.decimals())); } catch {}
@@ -78,6 +78,7 @@ export function useChainData(account, config = null) {
     setMultisigLoading(true);
     setDashboardError(null);
     try {
+      // 使用配置中的ABI，若不存在则回退到默认ABI
       const vaultAbi = effectiveConfig.vaultAbi || VAULT_ABI;
       const lensAbi = effectiveConfig.vaultLensAbi || VAULT_LENS_ABI;
       const distAbi = effectiveConfig.burnDistAbi || BURN_DIST_ABI;

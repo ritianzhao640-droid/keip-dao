@@ -16,7 +16,8 @@ export default function Dashboard({ account, signer, chainData, onNavigate }) {
     if (!signer || !account) return;
     setClaimingBurn(true);
     try {
-      const vault = new ethers.Contract(vaultAddress, VAULT_ABI, signer);
+      const vaultAbi = config?.vaultAbi || VAULT_ABI;
+      const vault = new ethers.Contract(vaultAddress, vaultAbi, signer);
       const tx = await vault.claimBurnReward();
       await tx.wait();
       await chainData.loadAll();
